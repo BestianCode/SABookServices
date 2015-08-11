@@ -31,7 +31,7 @@ func MakeAsteriskCIDTable(conf *SABDefine.Config_STR) int {
 		return 12
 	}
 	que = fmt.Sprintf("%s", strings.Replace(strings.Replace(strings.Replace(SABDefine.PG_QUE, "XYZTempTableZYX", SABDefine.AsteriskCIDTableTemp, -1), "XYZWorkTableZYX", SABDefine.AsteriskCIDTable, -1), "XYZOraclePersTableZYX", SABDefine.PG_Table_Oracle[2], -1));
-	log.Printf("%s\n", que)
+//	log.Printf("%s\n", que)
 
 	_, err = db.Exec(que)
 	if err != nil {
