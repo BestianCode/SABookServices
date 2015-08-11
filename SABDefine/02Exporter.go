@@ -7,8 +7,6 @@ type	Config_STR	struct {
 
 	PG_DSN		string
 
-	PG_Table_LDAP	string
-
 	LDAP_URL	string
 	LDAP_User	string
 	LDAP_Pass	string
@@ -26,4 +24,7 @@ var	(
 	Conf			Config_STR
 	LDAP_attr	=	[]string{"altfullname", "cn", "mail"}
 
-	)
+	PG_Table_Oracle	=	[]string{"ZZDMP_Ora_ORGS", "ZZDMP_Ora_DEPS", "ZZDMP_Ora_PERS"}
+	PG_Table_Domino	=	string("ZZDMP_Domino")
+
+)

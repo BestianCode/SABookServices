@@ -15,6 +15,9 @@ import (
 // Oracle
 	"gopkg.in/goracle.v1/oracle"
 
+// Translit
+	"github.com/fiam/gounidecode/unidecode"
+
 	"github.com/BestianRU/SABookServices/SABDefine"
 )
 
@@ -26,10 +29,12 @@ func LDAP_to_PG(conf *SABDefine.Config_STR) int {
 		fOUa			[]string
 		fOU			string
 		fMail			string
+
 		queryx			string
 
 		ckl		=	int	(0)
 		state		=	int	(0)
+
 	)
 
 
@@ -68,11 +73,18 @@ func LDAP_to_PG(conf *SABDefine.Config_STR) int {
 
 	defer db.Close()
 
-	qwetabletrunc := fmt.Sprintf("truncate %s;", conf.PG_Table_LDAP)
+	queryx = fmt.Sprintf("CREATE TABLE IF NOT EXISTS %s (namerus character varying(255), trnamerus character varying(255), namelat character varying(255), ou character varying(255), mail character varying(255));", SABDefine.PG_Table_Domino)
+	_, err = db.Query(queryx)
+	if err != nil {
+		log.Printf("PG::Query() Create table error: %v\n", err)
+		return 12
+	}
+
+	qwetabletrunc := fmt.Sprintf("truncate %s;", SABDefine.PG_Table_Domino)
 	_, err = db.Query(qwetabletrunc)
 	if err != nil {
 		log.Printf("PG::Query() truncate table error: %v\n", err)
-		return 12
+		return 13
 	}
 
 //	log.Printf("LDAP Export: %d // %s // %s // %s\n", result.Count(), result.Filter(), result.Base(), strings.Join(result.Attributes(), ", "))
@@ -81,7 +93,7 @@ func LDAP_to_PG(conf *SABDefine.Config_STR) int {
 	for _, entry := range sr.Entries {
 //		log.Printf("dn=%s\n", entry.Dn())
 		if ckl == 0 {
-			queryx = fmt.Sprintf("INSERT INTO %s (namerus, namelat, ou, mail) VALUES ", conf.PG_Table_LDAP)
+			queryx = fmt.Sprintf("INSERT INTO %s (namerus, trnamerus,  namelat, ou, mail) VALUES ", SABDefine.PG_Table_Domino)
 		}
 
 		for _, attr := range entry.Attributes {
@@ -110,16 +122,17 @@ func LDAP_to_PG(conf *SABDefine.Config_STR) int {
 			if fOU == "" {
 				fOU=conf.ROOT_OU
 			}
-			queryx = fmt.Sprintf("%s ('%s','%s','%s','%s')", queryx, strings.Trim(strings.Replace(fName[int(len(fName)-1)], "'", "", -1), " "), strings.Trim(strings.Replace(fCN[0], "'", "", -1), " "), fOU, strings.Trim(strings.ToLower(fMail), " "))
+			queryx = fmt.Sprintf("%s ('%s','%s','%s','%s','%s')", queryx, strings.Trim(strings.Replace(fName[int(len(fName)-1)], "'", "", -1), " "), strings.Trim(strings.Replace(unidecode.Unidecode(fName[int(len(fName)-1)]), "'", "", -1), " "), strings.Trim(strings.Replace(fCN[0], "'", "", -1), " "), fOU, strings.Trim(strings.ToLower(fMail), " "))
 			state = 1
 		}
 		if ckl>SABDefine.PG_MultiInsert {
 			queryx = fmt.Sprintf("%s;", queryx) 
 //			log.Printf("%s\n", queryx)
-			if queryx != fmt.Sprintf("INSERT INTO %s (namerus, namelat, ou, mail) VALUES ;", conf.PG_Table_LDAP) {
+			if queryx != fmt.Sprintf("INSERT INTO %s (namerus, namelat, ou, mail) VALUES ;", SABDefine.PG_Table_Domino) {
 				_, err = db.Query(queryx)
 				if err != nil {
 					log.Printf("PG::Query() insert error: %v /// %s\n", err, queryx)
+					return 14
 				}
 			}
 			ckl=0
@@ -138,8 +151,14 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 
 	var 	(
 
-		pg_Table_Oracle		=	[]string{"dump_oracle_org", "dump_oracle_dep", "dump_oracle_pers"}
-		pg_Query_Start		=	[]string{"INSERT INTO dump_oracle_org (uid, name) VALUES ", "INSERT INTO dump_oracle_dep (uid, idparent, name) VALUES ", "INSERT INTO dump_oracle_pers (uid, iddep, namefull,namelf,namelfi,position,phoneint, phonetown, phonecell, mail, idorg, idpos, sort) VALUES "}
+		pg_Query_Create		=	[]string{
+				"CREATE TABLE IF NOT EXISTS XYZWorkTableZYX (uid bytea, name character varying(255), trname character varying(255));",
+				"CREATE TABLE IF NOT EXISTS XYZWorkTableZYX (uid bytea, idparent bytea, name character varying(255), trname character varying(255));",
+				`CREATE TABLE IF NOT EXISTS XYZWorkTableZYX (uid bytea, iddep bytea, namefull character varying(255), trnamefull character varying(255), namelf character varying(255), trnamelf character varying(255), namelfi character varying(255), trnamelfi character varying(255), "position" character varying(255), phoneint character varying(255), phonetown character varying(255), phonecell character varying(255), mail character varying(255), idorg bytea, idpos bytea, sort integer);`}
+		pg_Query_Start		=	[]string{
+				"INSERT INTO XYZWorkTableZYX (uid, name, trname) VALUES ",
+				"INSERT INTO XYZWorkTableZYX (uid, idparent, name, trname) VALUES ",
+				"INSERT INTO XYZWorkTableZYX (uid, iddep, namefull, trnamefull, namelf, trnamelf, namelfi, trnamelfi, position, phoneint, phonetown, phonecell, mail, idorg, idpos, sort) VALUES "}
 
 		queryx			string
 	)
@@ -159,7 +178,7 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 	cu := cx.NewCursor()
 	defer cu.Close()
 
-	log.Printf("Oracle Select for %s\n", pg_Table_Oracle[mode-1])
+	log.Printf("Oracle Select for %s\n", SABDefine.PG_Table_Oracle[mode-1])
 
 	err = cu.Execute(SABDefine.Oracle_QUE[mode-1], nil, nil)
 
@@ -179,29 +198,36 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 
 	rows, err := cu.FetchMany(SABDefine.PG_MultiInsert)
 
-	qwetabletrunc := fmt.Sprintf("truncate %s;", pg_Table_Oracle[mode-1])
+	queryx = strings.Replace(pg_Query_Create[mode-1], "XYZWorkTableZYX", SABDefine.PG_Table_Oracle[mode-1], -1)
+
+	_, err = db.Query(queryx)
+	if err != nil {
+		log.Printf("PG::Query() Create table error: %v\n", err)
+		return 12
+	}
+	qwetabletrunc := fmt.Sprintf("truncate %s;", SABDefine.PG_Table_Oracle[mode-1])
 
 	_, err = db.Query(qwetabletrunc)
 	if err != nil {
 		log.Printf("PG::Query() truncate table error: %v\n", err)
-		return 12
+		return 13
 	}
 
-	log.Printf("Oracle Export to PG %s\n", pg_Table_Oracle[mode-1])
+	log.Printf("Oracle Export to PG %s\n", SABDefine.PG_Table_Oracle[mode-1])
 
 	for err == nil && len(rows) > 0 {
-		queryx = pg_Query_Start[mode-1]
+		queryx = strings.Replace(pg_Query_Start[mode-1], "XYZWorkTableZYX", SABDefine.PG_Table_Oracle[mode-1], -1)
 		for ckl, row := range rows {
 			if ckl>0 {
 				queryx = fmt.Sprintf("%s, ", queryx)
 			}
 			switch mode {
 				case 1:
-					queryx = fmt.Sprintf("%s ('%v','%s')", queryx, row[0],row[1]) 
+					queryx = fmt.Sprintf("%s ('%v','%s','%s')", queryx, row[0],row[1],strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[1])), "'", "", -1), " "))
 				case 2:
-					queryx = fmt.Sprintf("%s ('%v','%v','%s')", queryx, row[0],row[1],row[2]) 
+					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s')", queryx, row[0],row[1],row[2],strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1), " "))
 				case 3:
-					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s','%s','%s','%s','%s','%s','%s','%v','%v','%d')", queryx, row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12])
+					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%v','%v','%d')", queryx, row[0], row[1], row[2], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1), " "), row[3], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[3])), "'", "", -1), " "), row[4], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[4])), "'", "", -1), " "), row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12])
 				default:
 					break
 			}
@@ -213,11 +239,12 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 		_, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() insert error: %v /// %s\n", err, queryx)
+			return 14
 		}
 		rows, err = cu.FetchMany(SABDefine.PG_MultiInsert)
 	}
 
-	log.Printf("Oracle FINISHED for %s\n", pg_Table_Oracle[mode-1])
+	log.Printf("Oracle FINISHED for %s\n", SABDefine.PG_Table_Oracle[mode-1])
 
 	return 94
 }

@@ -5,8 +5,6 @@
 
 	"PG_DSN":		"host=xxx user=pguser password=pgpass dbname=asterisk-pbook sslmode=disable",
 
-	"PG_Table_LDAP":	"dump_domino_mail",
-
 	"LDAP_URL":		"URL:389",
 	"LDAP_User":		"",
 	"LDAP_Pass":		"",
