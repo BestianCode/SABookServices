@@ -45,3 +45,4 @@ func MakeAsteriskCIDTable(conf *SABDefine.Config_STR) int {
 	return 94
 
 }
+
