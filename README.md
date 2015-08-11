@@ -24,3 +24,4 @@ go get github.com/lib/pq
 
 go get gopkg.in/ldap.v1
 
+go get github.com/fiam/gounidecode/unidecode
