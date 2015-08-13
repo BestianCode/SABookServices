@@ -1,9 +1,11 @@
 package SABDefine
 
-var	Def_config_file	=	string("./Exporter.json")	// Default configuration file
+var	(
+		Def_config_file	= string("./Exporter.json")	// Default configuration file
 
-const	(
-	PG_MultiInsert	= 50					// 50	Inserts
-	Sleep_Time	= 600					// 600	seconds
-	Sleep_cycles	= 36					// 24	cycles
+		PG_MultiInsert	= int(50)					// 50	Inserts
+
+//		Sleep_Time	= int(600)					// 600	seconds
+		Sleep_Time	= string("600")					// 600	seconds
+		Sleep_cycles	= int(36)					// 24	cycles
 )
