@@ -2,7 +2,7 @@
 
 aptitide install libaio1
 
-Install Oracle InstantClient
+Install Oracle InstantClient and SDK
 
 Edit file tnsnames.ora and put to /usr/local/instantclient_12_1
 
