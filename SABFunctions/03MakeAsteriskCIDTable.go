@@ -40,7 +40,8 @@ func MakeAsteriskCIDTable(conf *SABDefine.Config_STR) int {
 	}
 
 
-	log.Printf("MakeAsteriskCIDTable FINISHED\n")
+//	log.Printf("MakeAsteriskCIDTable FINISHED\n")
+	log.Printf("\tFINISHED\n")
 
 	return 94
 

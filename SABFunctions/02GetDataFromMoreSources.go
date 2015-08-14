@@ -142,7 +142,8 @@ func LDAP_to_PG(conf *SABDefine.Config_STR) int {
 		}
 	}
 
-	log.Printf("LDAP FINISHED\n")
+//	log.Printf("LDAP FINISHED\n")
+	log.Printf("\tFINISHED\n")
 
 	return 94
 }
@@ -213,7 +214,7 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 		return 13
 	}
 
-	log.Printf("Oracle Export to PG %s\n", SABDefine.PG_Table_Oracle[mode-1])
+	log.Printf("\tOracle Export to PG %s\n", SABDefine.PG_Table_Oracle[mode-1])
 
 	for err == nil && len(rows) > 0 {
 		queryx = strings.Replace(pg_Query_Start[mode-1], "XYZWorkTableZYX", SABDefine.PG_Table_Oracle[mode-1], -1)
@@ -244,7 +245,8 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 		rows, err = cu.FetchMany(SABDefine.PG_MultiInsert)
 	}
 
-	log.Printf("Oracle FINISHED for %s\n", SABDefine.PG_Table_Oracle[mode-1])
+//	log.Printf("Oracle FINISHED for %s\n", SABDefine.PG_Table_Oracle[mode-1])
+	log.Printf("\t\tFINISHED\n")
 
 	return 94
 }

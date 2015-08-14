@@ -18,6 +18,9 @@ func main() {
 	var	(
 		my_error		int
 
+		st_ORA_clean		=	int(0)
+		st_LDAP_clean		=	int(0)
+
 		st_LDAP_to_PG		=	int(0)
 		st_Oracle_to_PG_m1	=	int(0)
 		st_Oracle_to_PG_m2	=	int(0)
@@ -66,7 +69,14 @@ func main() {
 
 		log.SetOutput(flog_file)
 
-		log.Printf("WakeUP!")
+		log.Printf("--> WakeUP!")
+
+//		--------------------------------------------------------------------------------
+//		SABFunctions.GetORGs(&SABDefine.Conf)
+//		SABFunctions.RemoveNoChildrenORA(&SABDefine.Conf)
+//		SABFunctions.RemoveNoChildrenLDAP(&SABDefine.Conf)
+//		os.Exit(0)
+//		--------------------------------------------------------------------------------
 
 		if st_LDAP_to_PG == 0 {
 			if my_error = SABFunctions.LDAP_to_PG(&SABDefine.Conf); my_error != 94 {
@@ -74,7 +84,9 @@ func main() {
 			}else{
 				st_LDAP_to_PG=1
 			}
+			log.Printf("\t-")
 		}
+
 
 		if st_Oracle_to_PG_m1 == 0 {
 			if my_error = SABFunctions.Oracle_to_PG(1,&SABDefine.Conf); my_error != 94 {
@@ -82,7 +94,9 @@ func main() {
 			}else{
 				st_Oracle_to_PG_m1=1
 			}
+			log.Printf("\t-")
 		}
+
 
 		if st_Oracle_to_PG_m2 == 0 {
 			if my_error = SABFunctions.Oracle_to_PG(2,&SABDefine.Conf); my_error != 94 {
@@ -90,7 +104,9 @@ func main() {
 			}else{
 				st_Oracle_to_PG_m2=1
 			}
+			log.Printf("\t-")
 		}
+
 
 		if st_Oracle_to_PG_m3 == 0 {
 			if my_error = SABFunctions.Oracle_to_PG(3,&SABDefine.Conf); my_error != 94 {
@@ -98,6 +114,7 @@ func main() {
 			}else{
 				st_Oracle_to_PG_m3=1
 			}
+			log.Printf("\t-")
 		}
 
 //		if st_LDAP_to_PG>0 && st_Oracle_to_PG_m1>0 && st_Oracle_to_PG_m2>0 && st_Oracle_to_PG_m3>0 && st_WorkTables==0 {
@@ -113,12 +130,21 @@ func main() {
 		}
 */
 		if st_Oracle_to_PG_m1>0 && st_Oracle_to_PG_m2>0 && st_Oracle_to_PG_m3>0 {
+			if st_ORA_clean == 0 {
+				if my_error = SABFunctions.RemoveNoChildrenORA(&SABDefine.Conf); my_error != 94 {
+					log.Printf("RemoveNoChildrenORA error: %v\n", my_error)
+				}else{
+					st_ORA_clean=1
+				}
+				log.Printf("\t-")
+			}
 			if st_AsteriskCID_UP == 0 {
 				if my_error = SABFunctions.MakeAsteriskCIDTable(&SABDefine.Conf); my_error != 94 {
 					log.Printf("MakeAsteriskCIDTable error: %v\n", my_error)
 				}else{
 					st_AsteriskCID_UP=1
 				}
+				log.Printf("\t-")
 			}
 			if st_LDAP_UP == 0 {
 				if my_error = SABFunctions.GetORGs(&SABDefine.Conf); my_error != 94 {
@@ -126,6 +152,15 @@ func main() {
 				}else{
 					st_LDAP_UP=1
 				}
+				log.Printf("\t-")
+			}
+			if st_LDAP_clean == 0 {
+				if my_error = SABFunctions.RemoveNoChildrenLDAP(&SABDefine.Conf); my_error != 94 {
+					log.Printf("RemoveNoChildrenLDAP error: %v\n", my_error)
+				}else{
+					st_LDAP_clean=1
+				}
+				log.Printf("\t-")
 			}
 		}
 
@@ -141,6 +176,9 @@ func main() {
 			st_Oracle_to_PG_m1=0
 			st_Oracle_to_PG_m2=0
 			st_Oracle_to_PG_m3=0
+
+			st_ORA_clean=0
+			st_LDAP_clean=0
 
 			st_AsteriskCID_UP=0
 			st_LDAP_UP=0

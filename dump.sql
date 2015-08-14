@@ -9,6 +9,20 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
 SET search_path = public, pg_catalog;
 
 --
@@ -251,42 +265,6 @@ ALTER SEQUENCE ldap_oc_mappings_id_seq OWNED BY ldap_oc_mappings.id;
 
 
 --
--- Name: ldapx_contacts; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
---
-
-CREATE TABLE ldapx_contacts (
-    id integer NOT NULL,
-    phone character varying(255),
-    pers_id integer NOT NULL,
-    mobile character varying(255),
-    mail character varying(255)
-);
-
-
-ALTER TABLE public.ldapx_contacts OWNER TO asterisk;
-
---
--- Name: ldapx_contacts_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
---
-
-CREATE SEQUENCE ldapx_contacts_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
-ALTER TABLE public.ldapx_contacts_id_seq OWNER TO asterisk;
-
---
--- Name: ldapx_contacts_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
---
-
-ALTER SEQUENCE ldapx_contacts_id_seq OWNED BY ldapx_contacts.id;
-
-
---
 -- Name: ldapx_institutes; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -323,17 +301,52 @@ ALTER SEQUENCE ldapx_institutes_id_seq OWNED BY ldapx_institutes.id;
 
 
 --
+-- Name: ldapx_mail; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE ldapx_mail (
+    id integer NOT NULL,
+    mail character varying(255) NOT NULL,
+    pers_id integer NOT NULL
+);
+
+
+ALTER TABLE public.ldapx_mail OWNER TO asterisk;
+
+--
+-- Name: ldapx_mail_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE ldapx_mail_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ldapx_mail_id_seq OWNER TO asterisk;
+
+--
+-- Name: ldapx_mail_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE ldapx_mail_id_seq OWNED BY ldapx_mail.id;
+
+
+--
 -- Name: ldapx_persons; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
 --
 
 CREATE TABLE ldapx_persons (
     id integer NOT NULL,
-    name character varying(255) NOT NULL,
-    surname character varying(255) NOT NULL,
+    name character varying(255),
+    surname character varying(255),
     password character varying(64),
     mn character varying(255),
     uid bytea,
-    idparent bytea
+    idparent bytea,
+    fullname character varying(255)
 );
 
 
@@ -361,6 +374,75 @@ ALTER SEQUENCE ldapx_persons_id_seq OWNED BY ldapx_persons.id;
 
 
 --
+-- Name: ldapx_phones_mobile; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE ldapx_phones_mobile (
+    id integer NOT NULL,
+    phone character varying(255) NOT NULL,
+    pers_id integer NOT NULL
+);
+
+
+ALTER TABLE public.ldapx_phones_mobile OWNER TO asterisk;
+
+--
+-- Name: ldapx_phones_mobile_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE ldapx_phones_mobile_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ldapx_phones_mobile_id_seq OWNER TO asterisk;
+
+--
+-- Name: ldapx_phones_mobile_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE ldapx_phones_mobile_id_seq OWNED BY ldapx_phones_mobile.id;
+
+
+--
+-- Name: ldapx_phones_work; Type: TABLE; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+CREATE TABLE ldapx_phones_work (
+    id integer NOT NULL,
+    phone character varying(255) NOT NULL,
+    pers_id integer NOT NULL,
+    pass integer
+);
+
+
+ALTER TABLE public.ldapx_phones_work OWNER TO asterisk;
+
+--
+-- Name: ldapx_phones_work_id_seq; Type: SEQUENCE; Schema: public; Owner: asterisk
+--
+
+CREATE SEQUENCE ldapx_phones_work_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.ldapx_phones_work_id_seq OWNER TO asterisk;
+
+--
+-- Name: ldapx_phones_work_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: asterisk
+--
+
+ALTER SEQUENCE ldapx_phones_work_id_seq OWNED BY ldapx_phones_work.id;
+
+
+--
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
@@ -385,14 +467,14 @@ ALTER TABLE ONLY ldap_oc_mappings ALTER COLUMN id SET DEFAULT nextval('ldap_oc_m
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
-ALTER TABLE ONLY ldapx_contacts ALTER COLUMN id SET DEFAULT nextval('ldapx_contacts_id_seq'::regclass);
+ALTER TABLE ONLY ldapx_institutes ALTER COLUMN id SET DEFAULT nextval('ldapx_institutes_id_seq'::regclass);
 
 
 --
 -- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
 --
 
-ALTER TABLE ONLY ldapx_institutes ALTER COLUMN id SET DEFAULT nextval('ldapx_institutes_id_seq'::regclass);
+ALTER TABLE ONLY ldapx_mail ALTER COLUMN id SET DEFAULT nextval('ldapx_mail_id_seq'::regclass);
 
 
 --
@@ -403,18 +485,33 @@ ALTER TABLE ONLY ldapx_persons ALTER COLUMN id SET DEFAULT nextval('ldapx_person
 
 
 --
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE ONLY ldapx_phones_mobile ALTER COLUMN id SET DEFAULT nextval('ldapx_phones_mobile_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: asterisk
+--
+
+ALTER TABLE ONLY ldapx_phones_work ALTER COLUMN id SET DEFAULT nextval('ldapx_phones_work_id_seq'::regclass);
+
+
+--
 -- Data for Name: ldap_attr_mappings; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldap_attr_mappings VALUES (2, 1, 'telephoneNumber', 'ldapx_contacts.phone', NULL, 'ldapx_persons,ldapx_contacts', 'ldapx_contacts.pers_id=ldapx_persons.id', 'SELECT add_phone(?,?)', 'DELETE FROM ldapx_contacts WHERE phone=? AND pers_id=?', 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (3, 1, 'givenName', 'ldapx_persons.name', NULL, 'ldapx_persons', NULL, 'UPDATE ldapx_persons SET name=? WHERE id=?', 'UPDATE ldapx_persons SET name='''' WHERE (name=? OR name='''') AND id=?', 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (4, 1, 'sn', 'ldapx_persons.surname', NULL, 'ldapx_persons', NULL, 'UPDATE ldapx_persons SET surname=? WHERE id=?', 'UPDATE ldapx_persons SET surname='''' WHERE (surname=? OR surname='''') AND id=?', 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (5, 1, 'userPassword', 'ldapx_persons.password', NULL, 'ldapx_persons', 'ldapx_persons.password IS NOT NULL', 'UPDATE ldapx_persons SET password=? WHERE id=?', 'UPDATE ldapx_persons SET password=NULL WHERE password=? AND id=?', 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (11, 3, 'o', 'ldapx_institutes.name', NULL, 'ldapx_institutes', NULL, 'UPDATE ldapx_institutes SET name=? WHERE id=?', 'UPDATE ldapx_institutes SET name='''' WHERE name=? AND id=?', 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (12, 3, 'dc', 'lower(ldapx_institutes.name)', NULL, 'ldapx_institutes,ldap_entries AS dcObject,ldap_entry_objclasses AS auxObjectClass', 'ldapx_institutes.id=dcObject.keyval AND dcObject.oc_map_id=3 AND dcObject.id=auxObjectClass.entry_id AND auxObjectClass.oc_name=''dcObject''', NULL, 'SELECT 1 FROM ldapx_institutes WHERE lower(name)=? AND id=? and 1=0', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (1, 1, 'cn', 'text(ldapx_persons.name||'' ''||ldapx_persons.mn||'' ''||ldapx_persons.surname)', NULL, 'ldapx_persons', NULL, 'SELECT update_person_cn(?,?)', 'SELECT 1 FROM ldapx_persons WHERE ldapx_persons.name=? AND ldapx_persons.id=? AND 1=0', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (16, 1, 'mobile', 'ldapx_contacts.mobile', NULL, 'ldapx_persons,ldapx_contacts', 'ldapx_contacts.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (17, 1, 'mail', 'ldapx_contacts.mail', NULL, 'ldapx_persons,ldapx_contacts', 'ldapx_contacts.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (6, 1, 'displayName', 'text(ldapx_persons.fullname)', NULL, 'ldapx_persons', NULL, NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (1, 1, 'cn', 'text(ldapx_persons.name||'' ''||ldapx_persons.surname)', NULL, 'ldapx_persons', NULL, NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (2, 1, 'telephoneNumber', 'ldapx_phones_work.phone', NULL, 'ldapx_persons,ldapx_phones_work', 'ldapx_phones_work.pers_id=ldapx_persons.id', '', '', 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (16, 1, 'mobile', 'ldapx_phones_mobile.phone', NULL, 'ldapx_persons,ldapx_phones_mobile', 'ldapx_phones_mobile.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (17, 1, 'mail', 'ldapx_mail.mail', NULL, 'ldapx_persons,ldapx_mail', 'ldapx_mail.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
 
 
 --
@@ -436,7 +533,7 @@ INSERT INTO ldap_entries VALUES (2, 'OU=Quadra,O=Enterprise', 3, 1, 2, '\x32', '
 -- Name: ldap_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('ldap_entries_id_seq', 94, true);
+SELECT pg_catalog.setval('ldap_entries_id_seq', 10, true);
 
 
 --
@@ -462,19 +559,6 @@ SELECT pg_catalog.setval('ldap_oc_mappings_id_seq', 1, false);
 
 
 --
--- Data for Name: ldapx_contacts; Type: TABLE DATA; Schema: public; Owner: asterisk
---
-
-
-
---
--- Name: ldapx_contacts_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
---
-
-SELECT pg_catalog.setval('ldapx_contacts_id_seq', 1, false);
-
-
---
 -- Data for Name: ldapx_institutes; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
@@ -486,7 +570,20 @@ INSERT INTO ldapx_institutes VALUES (2, 'Квадра', '\x32', '\x31', 0);
 -- Name: ldapx_institutes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('ldapx_institutes_id_seq', 78, true);
+SELECT pg_catalog.setval('ldapx_institutes_id_seq', 10, true);
+
+
+--
+-- Data for Name: ldapx_mail; Type: TABLE DATA; Schema: public; Owner: asterisk
+--
+
+
+
+--
+-- Name: ldapx_mail_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
+--
+
+SELECT pg_catalog.setval('ldapx_mail_id_seq', 1, false);
 
 
 --
@@ -499,7 +596,33 @@ SELECT pg_catalog.setval('ldapx_institutes_id_seq', 78, true);
 -- Name: ldapx_persons_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('ldapx_persons_id_seq', 1, false);
+SELECT pg_catalog.setval('ldapx_persons_id_seq', 10, true);
+
+
+--
+-- Data for Name: ldapx_phones_mobile; Type: TABLE DATA; Schema: public; Owner: asterisk
+--
+
+
+
+--
+-- Name: ldapx_phones_mobile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
+--
+
+SELECT pg_catalog.setval('ldapx_phones_mobile_id_seq', 10, true);
+
+
+--
+-- Data for Name: ldapx_phones_work; Type: TABLE DATA; Schema: public; Owner: asterisk
+--
+
+
+
+--
+-- Name: ldapx_phones_work_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
+--
+
+SELECT pg_catalog.setval('ldapx_phones_work_id_seq', 10, true);
 
 
 --
@@ -508,22 +631,6 @@ SELECT pg_catalog.setval('ldapx_persons_id_seq', 1, false);
 
 ALTER TABLE ONLY ldap_attr_mappings
     ADD CONSTRAINT ldap_attr_mappings_pkey PRIMARY KEY (id);
-
-
---
--- Name: ldap_entries_dn_key; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
---
-
-ALTER TABLE ONLY ldap_entries
-    ADD CONSTRAINT ldap_entries_dn_key UNIQUE (dn);
-
-
---
--- Name: ldap_entries_oc_map_id_keyval_key; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
---
-
-ALTER TABLE ONLY ldap_entries
-    ADD CONSTRAINT ldap_entries_oc_map_id_keyval_key UNIQUE (oc_map_id, keyval);
 
 
 --
@@ -543,14 +650,6 @@ ALTER TABLE ONLY ldap_oc_mappings
 
 
 --
--- Name: ldapx_contacts_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
---
-
-ALTER TABLE ONLY ldapx_contacts
-    ADD CONSTRAINT ldapx_contacts_pkey PRIMARY KEY (id);
-
-
---
 -- Name: ldapx_institutes_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
 --
 
@@ -559,11 +658,35 @@ ALTER TABLE ONLY ldapx_institutes
 
 
 --
+-- Name: ldapx_mail_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY ldapx_mail
+    ADD CONSTRAINT ldapx_mail_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: ldapx_persons_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
 --
 
 ALTER TABLE ONLY ldapx_persons
     ADD CONSTRAINT ldapx_persons_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ldapx_phones_mobile_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY ldapx_phones_mobile
+    ADD CONSTRAINT ldapx_phones_mobile_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ldapx_phones_work_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
+--
+
+ALTER TABLE ONLY ldapx_phones_work
+    ADD CONSTRAINT ldapx_phones_work_pkey PRIMARY KEY (id);
 
 
 --

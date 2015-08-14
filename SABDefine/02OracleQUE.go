@@ -1,6 +1,8 @@
 package SABDefine
 
-var	Oracle_QUE	=	[]string {`SELECT
+var	(
+
+	Oracle_QUE	=	[]string {`SELECT
   DP.ID_DEP as Id
   , DP.DEP_FULL as Name
 FROM 
@@ -61,3 +63,25 @@ WHERE
   )
 ORDER BY Id, IdDep, intNo, strFIO`}
 
+	MSSQL_QUE	=	[]string {`
+SELECT
+		dbo._Reference22602._IDRRef AS uid,
+		dbo._Reference22602._Description AS fio,
+		dbo._Reference22602._Code AS kod_fio,
+		dbo._Reference105._IDRRef as idorg,
+		dbo._Reference105._Description AS org,
+		dbo._Reference119._IDRRef AS idpodr,
+		dbo._Reference119._Description AS podr,
+		dbo._Reference50._IDRRef AS iddolg,
+		dbo._Reference50._Description AS dolg,
+		dbo._Reference22602._Fld27478 AS uloln, 
+		dbo._Reference22602._Fld27477 AS priem,
+			CASE WHEN dbo._Reference22602._Fld27478 = CONVERT(DATETIME, '01.01.1753', 104) THEN 'false' ELSE 'true' END AS prizn_uvoln, dbo._Reference22602._Folder
+	FROM dbo._Reference22602 LEFT OUTER JOIN
+		dbo._Reference105 ON dbo._Reference22602._Fld27474RRef = dbo._Reference105._IDRRef LEFT OUTER JOIN
+		dbo._Reference119 ON dbo._Reference22602._Fld27475RRef = dbo._Reference119._IDRRef LEFT OUTER JOIN
+		dbo._Reference50 ON dbo._Reference22602._Fld27476RRef = dbo._Reference50._IDRRef
+	WHERE (dbo._Reference22602._Folder = 1) AND (dbo._Reference22602._Fld27477 <> CONVERT(DATETIME, '01.01.1753', 104))
+`}
+
+)
