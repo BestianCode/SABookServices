@@ -222,13 +222,44 @@ func Oracle_to_PG(mode int, conf *SABDefine.Config_STR) int {
 			if ckl>0 {
 				queryx = fmt.Sprintf("%s, ", queryx)
 			}
+
 			switch mode {
 				case 1:
-					queryx = fmt.Sprintf("%s ('%v','%s','%s')", queryx, row[0],row[1],strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[1])), "'", "", -1), " "))
+					for cklr := 1; cklr<2; cklr++ {
+//						log.Printf("--X--> %d\n", cklr)
+
+						row[cklr]=strings.Trim(fmt.Sprintf("%s", row[cklr]), " ")
+
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+					}
+					queryx = fmt.Sprintf("%s ('%v','%s','%s')", queryx, row[0],row[1],strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[1])), "'", "", -1))
 				case 2:
-					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s')", queryx, row[0],row[1],row[2],strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1), " "))
+					for cklr := 2; cklr<4; cklr++ {
+//						log.Printf("--Y--> %d\n", cklr)
+
+						row[cklr]=strings.Trim(fmt.Sprintf("%s", row[cklr]), " ")
+
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+					}
+					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s')", queryx, row[0],row[1],row[2],strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1))
 				case 3:
-					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%v','%v','%d')", queryx, row[0], row[1], row[2], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1), " "), row[3], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[3])), "'", "", -1), " "), row[4], strings.Trim(strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[4])), "'", "", -1), " "), row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12])
+					for cklr := 2; cklr<6; cklr++ {
+//						log.Printf("--Z--> %d\n", cklr)
+
+						row[cklr]=strings.Trim(fmt.Sprintf("%s", row[cklr]), " ")
+
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+						row[cklr]=strings.Replace(fmt.Sprintf("%s", row[cklr]), "  ", " ", -1)
+					}
+					queryx = fmt.Sprintf("%s ('%v','%v','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%v','%v','%d')", queryx, row[0], row[1], row[2], strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[2])), "'", "", -1), row[3], strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[3])), "'", "", -1), row[4], strings.Replace(unidecode.Unidecode(fmt.Sprintf("%s", row[4])), "'", "", -1), row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12])
 				default:
 					break
 			}
