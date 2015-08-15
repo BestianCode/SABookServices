@@ -200,6 +200,12 @@ func GetORGs(conf *SABDefine.Config_STR) int {
 		return 311
 	}
 
+	rows, err = db.Query(SABDefine.PG_QUE_LDAP_ORGS41[0])
+	if err != nil {
+		log.Printf("PG::Query() Que 312 error: %v\n", err)
+		return 312
+	}
+
 	log.Printf("\t\tFINISHED\n")
 
 	return 94
