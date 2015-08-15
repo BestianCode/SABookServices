@@ -9,20 +9,6 @@ SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
 
---
--- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
---
-
-CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
-
-
 SET search_path = public, pg_catalog;
 
 --
@@ -346,7 +332,8 @@ CREATE TABLE ldapx_persons (
     mn character varying(255),
     uid bytea,
     idparent bytea,
-    fullname character varying(255)
+    fullname character varying(255),
+    lang integer NOT NULL
 );
 
 
@@ -502,16 +489,18 @@ ALTER TABLE ONLY ldapx_phones_work ALTER COLUMN id SET DEFAULT nextval('ldapx_ph
 -- Data for Name: ldap_attr_mappings; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldap_attr_mappings VALUES (3, 1, 'givenName', 'ldapx_persons.name', NULL, 'ldapx_persons', NULL, 'UPDATE ldapx_persons SET name=? WHERE id=?', 'UPDATE ldapx_persons SET name='''' WHERE (name=? OR name='''') AND id=?', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (4, 1, 'sn', 'ldapx_persons.surname', NULL, 'ldapx_persons', NULL, 'UPDATE ldapx_persons SET surname=? WHERE id=?', 'UPDATE ldapx_persons SET surname='''' WHERE (surname=? OR surname='''') AND id=?', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (5, 1, 'userPassword', 'ldapx_persons.password', NULL, 'ldapx_persons', 'ldapx_persons.password IS NOT NULL', 'UPDATE ldapx_persons SET password=? WHERE id=?', 'UPDATE ldapx_persons SET password=NULL WHERE password=? AND id=?', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (11, 3, 'o', 'ldapx_institutes.name', NULL, 'ldapx_institutes', NULL, 'UPDATE ldapx_institutes SET name=? WHERE id=?', 'UPDATE ldapx_institutes SET name='''' WHERE name=? AND id=?', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (12, 3, 'dc', 'lower(ldapx_institutes.name)', NULL, 'ldapx_institutes,ldap_entries AS dcObject,ldap_entry_objclasses AS auxObjectClass', 'ldapx_institutes.id=dcObject.keyval AND dcObject.oc_map_id=3 AND dcObject.id=auxObjectClass.entry_id AND auxObjectClass.oc_name=''dcObject''', NULL, 'SELECT 1 FROM ldapx_institutes WHERE lower(name)=? AND id=? and 1=0', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (6, 1, 'displayName', 'text(ldapx_persons.fullname)', NULL, 'ldapx_persons', NULL, NULL, NULL, 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (1, 1, 'cn', 'text(ldapx_persons.name||'' ''||ldapx_persons.surname)', NULL, 'ldapx_persons', NULL, NULL, NULL, 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (2, 1, 'telephoneNumber', 'ldapx_phones_work.phone', NULL, 'ldapx_persons,ldapx_phones_work', 'ldapx_phones_work.pers_id=ldapx_persons.id', '', '', 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (16, 1, 'mobile', 'ldapx_phones_mobile.phone', NULL, 'ldapx_persons,ldapx_phones_mobile', 'ldapx_phones_mobile.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
-INSERT INTO ldap_attr_mappings VALUES (17, 1, 'mail', 'ldapx_mail.mail', NULL, 'ldapx_persons,ldapx_mail', 'ldapx_mail.pers_id=ldapx_persons.id', NULL, NULL, 3, 0);
+COPY ldap_attr_mappings (id, oc_map_id, name, sel_expr, sel_expr_u, from_tbls, join_where, add_proc, delete_proc, param_order, expect_return) FROM stdin;
+5	1	userPassword	ldapx_persons.password	\N	ldapx_persons	ldapx_persons.password IS NOT NULL	UPDATE ldapx_persons SET password=? WHERE id=?	UPDATE ldapx_persons SET password=NULL WHERE password=? AND id=?	3	0
+11	3	o	ldapx_institutes.name	\N	ldapx_institutes	\N	UPDATE ldapx_institutes SET name=? WHERE id=?	UPDATE ldapx_institutes SET name='' WHERE name=? AND id=?	3	0
+12	3	dc	lower(ldapx_institutes.name)	\N	ldapx_institutes,ldap_entries AS dcObject,ldap_entry_objclasses AS auxObjectClass	ldapx_institutes.id=dcObject.keyval AND dcObject.oc_map_id=3 AND dcObject.id=auxObjectClass.entry_id AND auxObjectClass.oc_name='dcObject'	\N	SELECT 1 FROM ldapx_institutes WHERE lower(name)=? AND id=? and 1=0	3	0
+2	1	telephoneNumber	ldapx_phones_work.phone	\N	ldapx_persons,ldapx_phones_work	ldapx_phones_work.pers_id=ldapx_persons.id and ldapx_persons.lang=0			3	0
+16	1	mobile	ldapx_phones_mobile.phone	\N	ldapx_persons,ldapx_phones_mobile	ldapx_phones_mobile.pers_id=ldapx_persons.id and ldapx_persons.lang=0	\N	\N	3	0
+17	1	mail	ldapx_mail.mail	\N	ldapx_persons,ldapx_mail	ldapx_mail.pers_id=ldapx_persons.id and ldapx_persons.lang=0	\N	\N	3	0
+6	1	displayName	text(ldapx_persons.fullname)	\N	ldapx_persons	ldapx_persons.lang=0	\N	\N	3	0
+3	1	givenName	ldapx_persons.name	\N	ldapx_persons	ldapx_persons.lang is not null	UPDATE ldapx_persons SET name=? WHERE id=?	UPDATE ldapx_persons SET name='' WHERE (name=? OR name='') AND id=?	3	0
+4	1	sn	ldapx_persons.surname	\N	ldapx_persons	ldapx_persons.lang is not null			3	0
+1	1	cn	text(ldapx_persons.name||' '||ldapx_persons.surname)	\N	ldapx_persons	ldapx_persons.lang is not null	\N	\N	3	0
+\.
 
 
 --
@@ -525,8 +514,10 @@ SELECT pg_catalog.setval('ldap_attr_mappings_id_seq', 1, false);
 -- Data for Name: ldap_entries; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldap_entries VALUES (1, 'O=Enterprise', 3, 0, 1, '\x31', '\x30', 0);
-INSERT INTO ldap_entries VALUES (2, 'OU=Quadra,O=Enterprise', 3, 1, 2, '\x32', '\x31', 0);
+COPY ldap_entries (id, dn, oc_map_id, parent, keyval, uid, idparent, pass) FROM stdin;
+1	O=Enterprise	3	0	1	\\x31	\\x30	0
+2	OU=Quadra,O=Enterprise	3	1	2	\\x32	\\x31	0
+\.
 
 
 --
@@ -540,15 +531,19 @@ SELECT pg_catalog.setval('ldap_entries_id_seq', 10, true);
 -- Data for Name: ldap_entry_objclasses; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldap_entry_objclasses VALUES (1, 'dcObject');
+COPY ldap_entry_objclasses (entry_id, oc_name) FROM stdin;
+1	dcObject
+\.
 
 
 --
 -- Data for Name: ldap_oc_mappings; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldap_oc_mappings VALUES (1, 'inetOrgPerson', 'ldapx_persons', 'id', 'SELECT create_person()', 'DELETE FROM ldapx_persons WHERE id=?', 0);
-INSERT INTO ldap_oc_mappings VALUES (3, 'organization', 'ldapx_institutes', 'id', 'SELECT create_o()', 'DELETE FROM ldapx_institutes WHERE id=?', 0);
+COPY ldap_oc_mappings (id, name, keytbl, keycol, create_proc, delete_proc, expect_return) FROM stdin;
+1	inetOrgPerson	ldapx_persons	id	SELECT create_person()	DELETE FROM ldapx_persons WHERE id=?	0
+3	organization	ldapx_institutes	id	SELECT create_o()	DELETE FROM ldapx_institutes WHERE id=?	0
+\.
 
 
 --
@@ -562,8 +557,10 @@ SELECT pg_catalog.setval('ldap_oc_mappings_id_seq', 1, false);
 -- Data for Name: ldapx_institutes; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
-INSERT INTO ldapx_institutes VALUES (1, 'Вселенная', '\x31', '\x30', 0);
-INSERT INTO ldapx_institutes VALUES (2, 'Квадра', '\x32', '\x31', 0);
+COPY ldapx_institutes (id, name, uid, idparent, pass) FROM stdin;
+1	Вселенная	\\x31	\\x30	0
+2	Квадра	\\x32	\\x31	0
+\.
 
 
 --
@@ -577,19 +574,23 @@ SELECT pg_catalog.setval('ldapx_institutes_id_seq', 10, true);
 -- Data for Name: ldapx_mail; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY ldapx_mail (id, mail, pers_id) FROM stdin;
+\.
 
 
 --
 -- Name: ldapx_mail_id_seq; Type: SEQUENCE SET; Schema: public; Owner: asterisk
 --
 
-SELECT pg_catalog.setval('ldapx_mail_id_seq', 1, false);
+SELECT pg_catalog.setval('ldapx_mail_id_seq', 10, true);
 
 
 --
 -- Data for Name: ldapx_persons; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY ldapx_persons (id, name, surname, password, mn, uid, idparent, fullname, lang) FROM stdin;
+\.
 
 
 --
@@ -603,6 +604,8 @@ SELECT pg_catalog.setval('ldapx_persons_id_seq', 10, true);
 -- Data for Name: ldapx_phones_mobile; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY ldapx_phones_mobile (id, phone, pers_id) FROM stdin;
+\.
 
 
 --
@@ -616,6 +619,8 @@ SELECT pg_catalog.setval('ldapx_phones_mobile_id_seq', 10, true);
 -- Data for Name: ldapx_phones_work; Type: TABLE DATA; Schema: public; Owner: asterisk
 --
 
+COPY ldapx_phones_work (id, phone, pers_id, pass) FROM stdin;
+\.
 
 
 --
@@ -663,14 +668,6 @@ ALTER TABLE ONLY ldapx_institutes
 
 ALTER TABLE ONLY ldapx_mail
     ADD CONSTRAINT ldapx_mail_pkey PRIMARY KEY (id);
-
-
---
--- Name: ldapx_persons_pkey; Type: CONSTRAINT; Schema: public; Owner: asterisk; Tablespace: 
---
-
-ALTER TABLE ONLY ldapx_persons
-    ADD CONSTRAINT ldapx_persons_pkey PRIMARY KEY (id);
 
 
 --
