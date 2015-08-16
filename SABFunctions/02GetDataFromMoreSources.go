@@ -16,7 +16,7 @@ import (
 	"gopkg.in/goracle.v1/oracle"
 
 // Translit
-	"github.com/fiam/gounidecode/unidecode"
+	"github.com/BestianRU/SABookServices/unidecode"
 
 	"github.com/BestianRU/SABookServices/SABDefine"
 )

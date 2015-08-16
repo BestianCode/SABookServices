@@ -83,10 +83,10 @@ delete from ldapx_persons where lang=0 and uid not in (select uid from zzdmp_ora
 insert into ldapx_persons (uid,lang)
 	select distinct uid,0 from zzdmp_ora_pers where uid is not null and uid not in (select uid from ldapx_persons where uid is not null and lang=0);
 update ldapx_persons set idparent=subq.idparent, fullname=subq.fullname, name=regexp_replace(subq.name, '.*\ ', '', 'g'),
-			surname=regexp_replace(subq.name, '\ .*', '', 'g')
-	from (select namefull as fullname, namelf as name, uid, iddep as idparent from zzdmp_ora_pers) as subq
+			surname=regexp_replace(subq.name, '\ .*', '', 'g'), bc=subq.position
+	from (select namefull as fullname, namelf as name, uid, iddep as idparent, position from zzdmp_ora_pers) as subq
 		where ldapx_persons.lang=0 and ldapx_persons.uid=subq.uid and (ldapx_persons.fullname<>subq.fullname or ldapx_persons.fullname is NULL or
-			ldapx_persons.idparent<>subq.idparent);
+			ldapx_persons.idparent<>subq.idparent or ldapx_persons.bc<>subq.position);
 
 delete from ldapx_persons where lang=1 and uid not in (select uid from zzdmp_ora_pers where uid is not null) and uid is not null;
 insert into ldapx_persons (id,uid,lang)
@@ -95,7 +95,7 @@ insert into ldapx_persons (id,uid,lang)
 	zzdmp_ora_pers.uid in (select uid from ldapx_persons where uid is not null and lang=0) and zzdmp_ora_pers.uid=subq.uid;
 
 update ldapx_persons set idparent=subq.idparent, fullname=subq.fullname, name=regexp_replace(subq.name, '.*\ ', '', 'g'),
-			surname=regexp_replace(subq.name, '\ .*', '', 'g')
+			surname=regexp_replace(subq.name, '\ .*', '', 'g'), bc='-'
 	from (select trnamefull as fullname, trnamelf as name, uid, iddep as idparent from zzdmp_ora_pers) as subq
 		where ldapx_persons.lang=1 and ldapx_persons.uid=subq.uid and (ldapx_persons.fullname<>subq.fullname or ldapx_persons.fullname is NULL or
 			ldapx_persons.idparent<>subq.idparent);
@@ -148,8 +148,8 @@ CREATE TEMP TABLE XYZTempTableZYX ( phone character varying(255), pers_id intege
 
 insert into XYZTempTableZYX (phone, pers_id)
 	select
-		regexp_split_to_table(regexp_replace(regexp_replace(regexp_replace(regexp_replace(ora.phonetown,
-			'[^0-9доб.,\(\)\-\+\n]', '', 'g'), '\,.*доб', ' доб', 'g'), '\+7|^8|\(\)', '', 'g'), '\n', ',' ,'g'), ','), pers.id
+		format('8%s', regexp_split_to_table(regexp_replace(regexp_replace(regexp_replace(regexp_replace(ora.phonetown,
+			'[^0-9доб.,\(\)\-\+\n]', '', 'g'), '\,.*доб', ' доб', 'g'), '\+7|^8|\(\)', '', 'g'), '\n', ',' ,'g'), ',')), pers.id
 		from zzdmp_ora_pers as ora, ldapx_persons as pers where pers.lang=0 and pers.uid=ora.uid and ora.phonetown similar to '%[0-9]%';
 insert into ldapx_phones_work (phone,pers_id, pass)
 	select phone, pers_id,2 from XYZTempTableZYX as tmp where length(phone)>4 and phone not in
