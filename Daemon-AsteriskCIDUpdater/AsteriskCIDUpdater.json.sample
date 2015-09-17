@@ -1,0 +1,16 @@
+{
+	"PG_DSN":		"host=xxx user=pguser password=pgpass dbname=asterisk-pbook sslmode=disable",
+
+	"AST_SQLite_DB":	"/var/lib/asterisk/astdb.sqlite3",
+	"AST_CID_Group":	"rus-moscow",
+	"AST_Num_Start":	"80",
+
+	"AST_ARI_Host":		"127.0.0.1",
+	"AST_ARI_Port":		5038,
+	"AST_ARI_User":		"admin",
+	"AST_ARI_Pass":		"passw0rd",
+
+	"LOG_File":		"/var/log/ABook/AsteriskCIDUpdater.log",
+	"PID_File":		"/var/run/AsteriskCIDUpdater.pid"
+}
+

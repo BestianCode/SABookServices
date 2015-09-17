@@ -1,33 +1,32 @@
-The project completed. Go to https://github.com/BestianRU/SABookServices-02
-
-# SABookServices
-
-aptitide install libaio1
-
-Install Oracle InstantClient and SDK
-
-Edit file tnsnames.ora and put to /usr/local/instantclient_12_1
-
----------- /etc/ld.so.conf.d/oracle.conf ----------
-/usr/local/instantclient_12_1
+# SABookServices-03
 ---------------------------------------------------
 
-export GOPATH=/usr/lib/go
+## Exporter
 
-export NLS_LANG=RUSSIAN_CIS.UTF8
+* aptitide install libaio1
+* 
+* Install Oracle InstantClient and SDK
+* Edit file tnsnames.ora and put to /usr/local/instantclient_12_1
+* Add to file /etc/ld.so.conf.d/oracle.conf path: /usr/local/instantclient_12_1
+* 
+* export GOPATH=/usr/lib/go
+* export NLS_LANG=RUSSIAN_CIS.UTF8
+* export TNS_ADMIN="/usr/local/instantclient_12_1"
+* CGO_CFLAGS=-I/usr/local/instantclient_12_1/sdk/include
+* CGO_LDFLAGS=-L/usr/local/instantclient_12_1
+* 
+* PATH="$PATH:/usr/local/instantclient_12_1"
+* 
+* go get gopkg.in/goracle.v1
+* go get github.com/lib/pq
+* go get gopkg.in/ldap.v1 - Corrected and integrated. Do not fetch this package.
+* go get github.com/fiam/gounidecode/unidecode - Corrected and integrated. Do not fetch this package.
+* go get github.com/denisenkom/go-mssqldb
 
-export TNS_ADMIN="/usr/local/instantclient_12_1"
+## AsteriskCIDUpdater
 
-CGO_CFLAGS=-I/usr/local/instantclient_12_1/sdk/include
+* go get github.com/mattn/go-sqlite3
+* go get code.google.com/p/gami
 
-CGO_LDFLAGS=-L/usr/local/instantclient_12_1
 
-PATH="$PATH:/usr/local/instantclient_12_1"
 
-go get gopkg.in/goracle.v1
-
-go get github.com/lib/pq
-
-go get gopkg.in/ldap.v1
-
-go get github.com/fiam/gounidecode/unidecode

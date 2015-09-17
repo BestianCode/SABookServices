@@ -1,0 +1,28 @@
+{{ define "search" }}
+			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
+			<tr>
+				<td>
+					<table>
+						<tr>
+							<td>
+								<form name="GoToStart" action="/GoOrg" method="get">
+									<input name="GoToStart" value="в начало" type=submit>
+								</form>
+							</td><!--<td>
+								<form name="GoToBack" action="/GoOrg" method="get">
+									<input name="dn" value="{{.PrevDN}}" type=hidden>
+									<input name="GoToBack" value="назад" type=submit>
+								</form>
+							</td>--><td>
+								<form name="Search" action="/GoOrg" method="get">
+									<input name="cn" maxlength="64" size="64" value="" type="text" />
+									<input name="dn" value="{{.DN}}" type=hidden>
+									<input name="Search" value="искать" type=submit>
+								</form>
+							</td>
+						</tr>
+					</table>
+				</td>
+			</tr>
+			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
+{{ end }}

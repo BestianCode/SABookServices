@@ -1,0 +1,13 @@
+{{ define "index" }}
+
+{{ template "header" }}
+{{ template "header-table" }}
+
+{{ range $key, $value := . }}
+		<tr><td>{{$key}}</td><td>{{$value}}</td></tr>
+{{ end }}
+
+{{ template "footer-table" }}
+{{ template "footer" }}
+
+{{ end }}

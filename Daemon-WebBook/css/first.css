@@ -1,0 +1,79 @@
+td.List_Orgs {
+    font-family: 'times new roman', times, serif;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: left;
+    white-space: nowrap;
+}
+td.UserInfo_Title {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-align: left;
+    text-decoration: underline;
+    white-space: nowrap;
+    padding-left: 15px;
+}
+td.UserInfo_leftHead {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+}
+td.UserInfo_workplace {
+    font-size: 10px;
+    font-weight: normal;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+}
+td.UserInfo_range {
+    font-size: 14px;
+    font-weight: normal;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+}
+td.UserInfo_mailto {
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+}
+td.Footer_Version {
+    font-size: 8px;
+    font-weight: normal;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+    color: #DDDDDD;
+}
+button,
+input,
+optgroup,
+select,
+textarea {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+button {
+  overflow: visible;
+}
+button,
+select {
+  text-transform: none;
+}
+button,
+html input[type="button"],
+input[type="reset"],
+input[type="submit"] {
+  -webkit-appearance: button;
+  cursor: pointer;
+}
+button[disabled],
+html input[disabled] {
+  cursor: default;
+}
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+  padding: 0;
+  border: 0;
+}

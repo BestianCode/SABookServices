@@ -1,0 +1,44 @@
+{
+	"PG_DSN":		"host=xxx user=pguser password=pgpass dbname=asterisk-pbook sslmode=disable",
+
+	"Oracle_SRV":		[
+					["ologin1", "opass1", "SID1", "name1"],
+					["ologin2", "opass2", "SID2", "name2"]
+				],
+
+	"MSSQL_DSN":		[
+					["server=SERVER1;user id=USER1;password=PASSWORD2;port=1433;encrypt=disable","ServerName1"],
+					["server=SERVER2;user id=USER2;password=PASSWORD2;port=1433;encrypt=disable","ServerName2"]
+				],
+
+	"LDAP_URL":		[
+					["URL1:389", "", "", "O=ORG1", "(objectClass=*)"],
+					["URL2:389", "User2", "Pass2", "O=ORG2", "(objectClass=*)"]
+				],
+
+	"ROOT_OU":		"RootOrg",
+
+	"ROOT_DN":		[
+					["O=Universe", "Universe"],
+					["OU=Earth,O=Universe", "Earth"]
+				],
+
+	"Sleep_Time":		60,
+	"Sleep_cycles":		36,
+
+	"LOG_File":		"/var/log/ABook/Exporter.log",
+	"PID_File":		"/var/run/Exporter.pid",
+
+	"TRANS_NAMES":		[
+					["foo","bar"],
+					["Technology","tech"]
+				],
+
+	"BlackList_OU":		[
+					"[123 456 789 123 456 789]",
+					"[098 765 432 098 765 432]"
+				]
+
+}
+
+
