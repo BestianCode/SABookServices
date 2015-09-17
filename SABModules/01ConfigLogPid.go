@@ -44,7 +44,6 @@ type	Config_STR	struct {
 
 	BlackList_OU		[]string
 
-	WLB_LDAP_URL		[]string
 	WLB_Listen_IP		string
 	WLB_Listen_PORT		int
 	WLB_LDAP_ATTR		[][]string

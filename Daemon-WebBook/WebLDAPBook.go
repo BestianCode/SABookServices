@@ -20,7 +20,7 @@ import (
 
 const (
 	pName				=	string("SABook Web Address Book")
-	pVer				=	string("1 unstable alpha 2015.09.16.21.00")
+	pVer				=	string("1 alpha 2015.09.17.23.45")
 )
 
 var	(
@@ -31,6 +31,8 @@ var	(
 	pVersion				string
 
 	rconf					SABModules.Config_STR
+
+	ldap_count		=	int(0)
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -62,13 +64,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		fURL_Name			string
 
 		dn 					string
-		ldap_Search 		string
+		ldap_Search		string
 
 		ldapSearchMode	=	int(1)
 
 		ckl1, ckl2			int
 
-		ldap_Attr 			[]string
+		ldap_Attr			[]string
 
 	)
 
@@ -85,13 +87,13 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 //	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
 	if get_dn == "" {
-		dn=rconf.WLB_LDAP_URL[3]
+		dn=rconf.LDAP_URL[ldap_count][3]
 	}else{
 		dn=get_dn
 	}
 
 	if get_cn == "" {
-		ldap_Search=rconf.WLB_LDAP_URL[4]
+		ldap_Search=rconf.LDAP_URL[ldap_count][4]
 	}else{
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)(cn=*%s*))",unidecode.Unidecode(get_cn))
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)((displayName=*%s*)))",get_cn)
@@ -106,9 +108,69 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("--> %s", pVersion)
 	log.Printf("->")
 	log.Println(remIPClient+" --> https://"+r.Host+r.RequestURI)
-
-
 	log.Printf("%s ++> DN: %s / CN: %s / Mode: %d", remIPClient, dn, ldap_Search, ldapSearchMode)
+
+	log.Printf("%s ... Initialize connector...", remIPClient)
+
+	l, err := ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
+	if err == nil {
+		l.Close()
+	}
+
+	ckl1=0
+
+	for {
+		if ckl1>9 {
+			fmt.Fprintf(w, "Error connect to all LDAP servers...")
+			log.Printf("Error connect to all LDAP servers...")
+			return
+		}
+
+		ldap_count++
+		if ldap_count>len(rconf.LDAP_URL)-1 {
+			ldap_count=0
+		}
+
+		log.Printf("%s ... Trying to connect server %d of %d: %s", remIPClient, ldap_count+1, len(rconf.LDAP_URL), rconf.LDAP_URL[ldap_count][0])
+		l, err = ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			log.Printf("LDAP::Initialize() error: %v\n", err)
+			continue
+		}
+
+		defer l.Close()
+	//	l.Debug = true
+
+		break
+
+		ckl1++
+	}
+
+	log.Printf("%s =!= Connected to server %d of %d: %s", remIPClient, ldap_count+1, len(rconf.LDAP_URL), rconf.LDAP_URL[ldap_count][0])
+
+	err = l.Bind(rconf.LDAP_URL[ldap_count][1],rconf.LDAP_URL[ldap_count][2])
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+		log.Printf("LDAP::Bind() error: %v\n", err)
+		return
+	}
+
+
+	search := ldap.NewSearchRequest(dn, ldapSearchMode, ldap.NeverDerefAliases, 0, 0, false, ldap_Search, ldap_Attr, nil)
+
+//	log.Printf("Search: %v\n%v\n%v\n%v\n%v\n%v\n", search, dn, ldapSearchMode, ldap.NeverDerefAliases, ldap_Search, ldap_Attr)
+
+	sr, err := l.Search(search)
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+		log.Printf("LDAP::Search() error: %v\n", err)
+		return
+	}
+
+//	log.Printf("\n\nXXX2: %v", search)
+
+	log.Printf("%s ++> search: %s // found: %d\n", remIPClient, search.Filter, len(sr.Entries))
 
 	t, err := template.ParseFiles("templates/header.html")
 	if err != nil {
@@ -134,35 +196,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Println(err.Error())
 		return
 	}
-
-	l, err := ldap.Dial("tcp", rconf.WLB_LDAP_URL[0])
-	if err != nil {
-		fmt.Fprintf(w, err.Error())
-		log.Printf("LDAP::Initialize() error: %v\n", err)
-	}
-
-	defer l.Close()
-//	l.Debug = true
-
-	err = l.Bind(rconf.WLB_LDAP_URL[1],rconf.WLB_LDAP_URL[2])
-	if err != nil {
-		fmt.Fprintf(w, err.Error())
-		log.Printf("LDAP::Bind() error: %v\n", err)
-	}
-
-	search := ldap.NewSearchRequest(dn, ldapSearchMode, ldap.NeverDerefAliases, 0, 0, false, ldap_Search, ldap_Attr, nil)
-
-//	log.Printf("Search: %v\n%v\n%v\n%v\n%v\n%v\n", search, dn, ldapSearchMode, ldap.NeverDerefAliases, ldap_Search, ldap_Attr)
-
-	sr, err := l.Search(search)
-	if err != nil {
-		fmt.Fprintf(w, err.Error())
-		log.Printf("LDAP::Search() error: %v\n", err)
-	}
-
-//	log.Printf("\n\nXXX2: %v", search)
-
-	log.Printf("%s ++> search: %s // found: %d\n", remIPClient, search.Filter, len(sr.Entries))
 
 	if len(sr.Entries)>0 {
 		dnList := make (map[string]tList, len(sr.Entries))
@@ -214,7 +247,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			if fdn!="" && (fname!="" || foname!=""){
 				fPath=fdn
-				fPath=strings.Replace(strings.ToLower(fPath), ","+strings.ToLower(rconf.WLB_LDAP_URL[3]), "", -1)
+				fPath=strings.Replace(strings.ToLower(fPath), ","+strings.ToLower(rconf.LDAP_URL[ldap_count][3]), "", -1)
 				fPath_Split:=strings.Split(fPath, ",")
 				if ftype=="User" {
 //					log.Printf("%s", fPath)
@@ -226,21 +259,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 						fPath_Strip=fmt.Sprintf("%s%s,", fPath_Strip, fPath_Split[ckl2])
 					}
 					if ftype=="User" {
-						fPath_Strip=fmt.Sprintf("%s%s", fPath_Strip, rconf.WLB_LDAP_URL[3])
+						fPath_Strip=fmt.Sprintf("%s%s", fPath_Strip, rconf.LDAP_URL[ldap_count][3])
 						if ckl1==0 {
 							fURL=fPath_Strip
 						}
 //						log.Printf("%s", fPath_Strip)
 
 
-						subsearch := ldap.NewSearchRequest(fPath_Strip, 0, ldap.NeverDerefAliases, 0, 0, false, rconf.WLB_LDAP_URL[4], ldap_Attr, nil)
+						subsearch := ldap.NewSearchRequest(fPath_Strip, 0, ldap.NeverDerefAliases, 0, 0, false, rconf.LDAP_URL[ldap_count][4], ldap_Attr, nil)
 						subsr, err := l.Search(subsearch)
 						if err != nil {
 							fmt.Fprintf(w, err.Error())
 							log.Printf("LDAP::Search() error: %v\n", err)
 						}
 
-//						log.Printf("\t\t\t%s / %s / %d\n", fPath_Strip, rconf.WLB_LDAP_URL[4], len(subsr.Entries))
+//						log.Printf("\t\t\t%s / %s / %d\n", fPath_Strip, rconf.LDAP_URL[ldap_count][4], len(subsr.Entries))
 
 						if len(subsr.Entries)>0 {
 							for _, subentry := range subsr.Entries {
