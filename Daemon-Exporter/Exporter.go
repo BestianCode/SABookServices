@@ -17,7 +17,7 @@ func main() {
 
 	const (
 		pName				=	string("SABook Exporter Daemon")
-		pVer				=	string("3 2015.09.10.21.10")
+		pVer				=	string("3 2015.09.19.02.00")
 
 		pg_MultiInsert		=	int(50)
 	)

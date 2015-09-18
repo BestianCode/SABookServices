@@ -59,7 +59,7 @@ func RemoveNoChildrenCache(conf *SABModules.Config_STR) int {
 			queryx=strings.Replace(SABDefine.PG_QUE_RemoveNoChildren[ckl]	, "XYZDBOrgsXYZ", SABDefine.PG_Table_MSSQL[0], -1)
 			queryx=strings.Replace(queryx									, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
 			queryx=strings.Replace(queryx									, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
-
+			queryx=strings.Replace(queryx									, "XYZDBPhonesXYZ", SABDefine.PG_Table_Oracle, -1)
 //			log.Printf("%s\n", queryx)
 			rows, err := db.Query(queryx)
 			if err != nil {
@@ -78,6 +78,7 @@ func RemoveNoChildrenCache(conf *SABModules.Config_STR) int {
 				queryx=strings.Replace(SABDefine.PG_QUE_RemoveNoChildren[ckl+1]	, "XYZDBOrgsXYZ", SABDefine.PG_Table_MSSQL[0], -1)
 				queryx=strings.Replace(queryx									, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
 				queryx=strings.Replace(queryx									, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+				queryx=strings.Replace(queryx									, "XYZDBPhonesXYZ", SABDefine.PG_Table_Oracle, -1)
 
 //				log.Printf("%s\n", queryx)
 				_, err = db.Query(queryx)

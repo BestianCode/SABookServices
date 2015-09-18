@@ -5,15 +5,26 @@
 					<table>
 						<tr>
 							<td>
-								<form name="GoToStart" action="/GoOrg" method="get">
-									<input name="GoToStart" value="в начало" type=submit>
+								<form>
+									<input Type="button" value="<- назад" onClick="history.go(-1);return true;">
 								</form>
-							</td><!--<td>
+							</td>
+		{{ if .PrevDN }}
+							<td>
 								<form name="GoToBack" action="/GoOrg" method="get">
 									<input name="dn" value="{{.PrevDN}}" type=hidden>
-									<input name="GoToBack" value="назад" type=submit>
+									<input name="GoToBack" value="^ вверх ^" type=submit>
 								</form>
-							</td>--><td>
+							</td>
+		{{ end }}
+		{{ if .GoHome }}
+							<td>
+								<form name="GoToStart" action="/GoOrg" method="get">
+									<input name="GoToStart" value="на главную" type=submit>
+								</form>
+							</td>
+		{{ end }}
+							<td>
 								<form name="Search" action="/GoOrg" method="get">
 									<input name="cn" maxlength="64" size="64" value="" type="text" />
 									<input name="dn" value="{{.DN}}" type=hidden>

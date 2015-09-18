@@ -4,7 +4,7 @@ var	(
 
 	Oracle_QUE	=	string (`
 select
-    z.staff_id, y.adr_l2, y.adr_l1, y.adr_l3, y.afr_comment, y.tm, y.isvisible, x.kind_type
+    z.staff_id, y.adr_l2, y.adr_l1, y.adr_l3, y.afr_comment, y.tm, y.isvisible, x.kind_type, z.fl_fname
   from
     pbook.pb_kindtel x,
     pbook.pb_cinf y,

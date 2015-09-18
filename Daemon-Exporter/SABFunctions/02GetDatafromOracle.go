@@ -33,6 +33,7 @@ func Oracle_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 		row_comment		string
 		row_tm			string
 		row_number		string
+		row_fname		string
 		queryx			string
 
 		pg_Query_Create=	string(`
@@ -41,7 +42,7 @@ func Oracle_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 							server character varying(255),
 							uid bytea, phone character varying(255),
 							comment character varying(255),
-							tm character varying(5), visible character varying(5), type integer);
+							tm character varying(5), visible character varying(5), type integer, fname character varying(255));
 						`)
 
 		pg_Query_Create_Status	=	string(`
@@ -148,6 +149,12 @@ func Oracle_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 					row_tm="X"
 				}
 
+				if fmt.Sprintf("%s", row[8]) != "%!s(<nil>)" {
+					row_fname=SABModules.TextMutation(fmt.Sprintf("%s", row[8]))
+				}else{
+					row_fname=""
+				}
+
 				if fmt.Sprintf("%s", row[1]) != "%!s(<nil>)" && fmt.Sprintf("%s", row[2]) != "%!s(<nil>)"{
 					return_result=94
 					switch fmt.Sprintf("%d", row[7]) {
@@ -180,7 +187,7 @@ func Oracle_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 					insert_exec=1
 				}
 				if insert_exec==0 {
-					queryx=fmt.Sprintf("%sinsert into %s (server, uid, phone, comment, tm, visible, type) select '%s','%v','%s','%s','%s','%s','%d' where not exists (select uid from %s where uid='%v' and phone='%s'); ", queryx, SABDefine.PG_Table_Oracle, conf.Oracle_SRV[ckl_servers][3], row[0], row_number, row_comment, row_tm, row[6], row[7], SABDefine.PG_Table_Oracle, row[0], row_number)
+					queryx=fmt.Sprintf("%sinsert into %s (server, uid, phone, comment, tm, visible, type, fname) select '%s','%v','%s','%s','%s','%s','%d','%s' where not exists (select uid from %s where uid='%v' and phone='%s'); ", queryx, SABDefine.PG_Table_Oracle, conf.Oracle_SRV[ckl_servers][3], row[0], row_number, row_comment, row_tm, row[6], row[7], row_fname, SABDefine.PG_Table_Oracle, row[0], row_number)
 //					fmt.Printf("%s\n", queryx)
 					if ckl>=pg_minsert-1 {
 //						log.Printf("%s\n\n", queryx)

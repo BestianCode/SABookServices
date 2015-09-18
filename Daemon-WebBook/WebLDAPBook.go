@@ -64,7 +64,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		fURL_Name			string
 
 		dn 					string
-		ldap_Search		string
+		dn_back				string
+		dn_back_tmp			[]string
+
+		go_home_button		string
+
+		ldap_Search			string
 
 		ldapSearchMode	=	int(1)
 
@@ -86,10 +91,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	get_cn := r.FormValue("cn")
 //	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
-	if get_dn == "" {
+	if get_dn == ""{
 		dn=rconf.LDAP_URL[ldap_count][3]
 	}else{
 		dn=get_dn
+	}
+
+	if len(dn)<len(rconf.LDAP_URL[ldap_count][3]) {
+		dn=rconf.LDAP_URL[ldap_count][3]
 	}
 
 	if get_cn == "" {
@@ -108,7 +117,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("--> %s", pVersion)
 	log.Printf("->")
 	log.Println(remIPClient+" --> https://"+r.Host+r.RequestURI)
-	log.Printf("%s ++> DN: %s / CN: %s / Mode: %d", remIPClient, dn, ldap_Search, ldapSearchMode)
+	log.Printf("%s ++> DN: %s / CN: %s / Mode: %d / Def.DN: %s", remIPClient, dn, ldap_Search, ldapSearchMode, rconf.LDAP_URL[ldap_count][3])
+
+	if strings.ToLower(dn) != strings.ToLower(rconf.LDAP_URL[ldap_count][3]) {
+		go_home_button="+"
+		if ldapSearchMode == 1 {
+			dn_back_tmp = strings.Split(dn, ",")
+			for ckl1=1;ckl1<len(dn_back_tmp);ckl1++ {
+				if ckl1 == 1 {
+					dn_back = dn_back_tmp[ckl1]
+				}else{
+					dn_back += fmt.Sprintf(",%s", dn_back_tmp[ckl1])
+				}
+			}
+		}
+	}
 
 	log.Printf("%s ... Initialize connector...", remIPClient)
 
@@ -140,7 +163,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		defer l.Close()
-	//	l.Debug = true
+//		l.Debug = true
 
 		break
 
@@ -188,7 +211,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "search", template.FuncMap{"DN":dn})
+	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome":go_home_button, "PrevDN":dn_back, "DN":dn})
 
 	t, err = template.ParseFiles("templates/index.html")
 	if err != nil {

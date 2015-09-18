@@ -186,7 +186,11 @@ func MSSQL_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 							xfiotr=SABModules.PeopleMutation(unidecode.Unidecode(xname), "LAT")
 							xtab=SABModules.TextMutation(xtab)
 							xpos=SABModules.TextMutation(xpos)
-							queryx = fmt.Sprintf("%sINSERT INTO %s (server, uid, idparent, nlr, nfr, nfir, nmr, nmir, nlt, nft, nfit, nmt, nmit, tab, pos, idorg, contract) VALUES  ('%s', '%v', '%v','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%v',%d); ", queryx, SABDefine.PG_Table_MSSQL[ckl_que], conf.MSSQL_DSN[ckl_servers][1], xid, xidparent, xfio[0],xfio[1],xfio[1][:2],xfio[2],xfio[2][:2], xfiotr[0],xfiotr[1],xfiotr[1][:1],xfiotr[2],xfiotr[2][:1], xtab, xpos, xidorg, xcontract)
+							if len(xfio)<3 {
+								queryx = fmt.Sprintf("%sINSERT INTO %s (server, uid, idparent, nlr, nfr, nfir, nmr, nmir, nlt, nft, nfit, nmt, nmit, tab, pos, idorg, contract) VALUES  ('%s', '%v', '%v','%s','%s','%s','','','%s','%s','%s','','','%s','%s','%v',%d); ", queryx, SABDefine.PG_Table_MSSQL[ckl_que], conf.MSSQL_DSN[ckl_servers][1], xid, xidparent, xfio[0],xfio[1],xfio[1][:2],xfiotr[0],xfiotr[1],xfiotr[1][:1],xtab, xpos, xidorg, xcontract)
+							}else{
+								queryx = fmt.Sprintf("%sINSERT INTO %s (server, uid, idparent, nlr, nfr, nfir, nmr, nmir, nlt, nft, nfit, nmt, nmit, tab, pos, idorg, contract) VALUES  ('%s', '%v', '%v','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%v',%d); ", queryx, SABDefine.PG_Table_MSSQL[ckl_que], conf.MSSQL_DSN[ckl_servers][1], xid, xidparent, xfio[0],xfio[1],xfio[1][:2],xfio[2],xfio[2][:2], xfiotr[0],xfiotr[1],xfiotr[1][:1],xfiotr[2],xfiotr[2][:1], xtab, xpos, xidorg, xcontract)
+							}
 						default:
 							break
 					}
