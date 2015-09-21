@@ -17,10 +17,10 @@
 * 
 * PATH="$PATH:/usr/local/instantclient_12_1"
 * 
+* go get github.com/BestianRU/ldap
+* go get github.com/BestianRU/gounidecode
 * go get gopkg.in/goracle.v1
 * go get github.com/lib/pq
-* go get gopkg.in/ldap.v1 - Corrected and integrated. Do not fetch this package.
-* go get github.com/fiam/gounidecode/unidecode - Corrected and integrated. Do not fetch this package.
 * go get github.com/denisenkom/go-mssqldb
 
 ## AsteriskCIDUpdater
