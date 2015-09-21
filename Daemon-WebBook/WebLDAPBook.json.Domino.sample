@@ -1,0 +1,23 @@
+{
+	"LDAP_URL":		[
+					["LOTUS1:389", "", "", "O=Enterprise", "(objectClass=*)"],
+					["LOTUS2:389", "", "", "O=Enterprise", "(objectClass=*)"]
+				],
+
+	"WLB_Listen_IP":		"127.0.0.1",
+	"WLB_Listen_PORT":		3000,
+
+	"WLB_LDAP_ATTR":	[
+					["o","ORGName"],
+					["ou","ORGName"],
+					["cn","USERName"],
+					["issuedto","DN"],
+					["altfullname","DN"],
+					["displayname","FullName"],
+					["mail","Mail"]
+				],
+
+	"LOG_File":			"/var/log/ABook/WebLDAPBook.log",
+	"PID_File":			"/var/run/WebLDAPBook.pid"
+}
+

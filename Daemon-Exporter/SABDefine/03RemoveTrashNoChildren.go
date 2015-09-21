@@ -5,6 +5,7 @@ var	(
 	PG_QUE_RemoveBlackListed	=	string(`
 delete from XYZDBOrgsXYZ where uid='XYZUidXYZ';
 delete from XYZDBDepsXYZ where uid='XYZUidXYZ' or idparent='XYZUidXYZ' or idorg='XYZUidXYZ';
+delete from XYZDBPhonesXYZ where lower(server)=lower('XSortPhones');
 `)
 
 	PG_QUE_RemoveNoChildren	=	[]string {`
@@ -21,7 +22,6 @@ update XYZDBPhonesXYZ set uid=subq.uidnew
 `,`
 select count(fname) from XYZDBPhonesXYZ group by uid, phone, type, fname having count(uid)>1;
 `,`
-delete from XYZDBPhonesXYZ where lower(server)=lower('XSortPhones');
 create temp table tmp as select uid, phone, type, fname from XYZDBPhonesXYZ group by uid, phone, type, fname having count(uid)>1;
 delete from XYZDBPhonesXYZ as y
 	using (select uid, phone, type, fname from tmp group by uid, phone, type, fname) as subq

@@ -36,9 +36,10 @@ func RemoveNoChildrenCache(conf *SABModules.Config_STR) int {
 	log.Printf("\t\tRemove BlackListed ORG and OU...\n")
 
 	for ckl=0;ckl<len(conf.BlackList_OU);ckl++ {
-		queryx=strings.Replace(SABDefine.PG_QUE_RemoveBlackListed	, "XYZDBOrgsXYZ", SABDefine.PG_Table_MSSQL[0], -1)
+		queryx=strings.Replace(SABDefine.PG_QUE_RemoveBlackListed				, "XYZDBOrgsXYZ", SABDefine.PG_Table_MSSQL[0], -1)
 		queryx=strings.Replace(queryx								, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
 		queryx=strings.Replace(queryx								, "XYZUidXYZ", conf.BlackList_OU[ckl], -1)
+		queryx=strings.Replace(queryx								, "XYZDBPhonesXYZ", SABDefine.PG_Table_Oracle, -1)
 
 //		log.Printf("%s\n", queryx)
 		_, err := db.Query(queryx)

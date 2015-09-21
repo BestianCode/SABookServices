@@ -12,9 +12,10 @@ import (
 	_ "github.com/lib/pq"
 
 //LDAP
-	"github.com/BestianRU/SABookServices/ForeignModules/ldap.v1"
+	"github.com/BestianRU/johnweldon/ldap"
+
 // Translit
-	"github.com/BestianRU/SABookServices/ForeignModules/unidecode"
+	"github.com/BestianRU/gounidecode/unidecode"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 	"github.com/BestianRU/SABookServices/Daemon-Exporter/SABDefine"

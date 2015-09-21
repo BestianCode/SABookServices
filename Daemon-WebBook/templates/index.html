@@ -3,32 +3,37 @@
 			<tr>
 				<td>
 					<table width=100%>
-				{{if $value.Dn }}
+				{{if $value.ORGName }}
 						<tr>
 							<td class="List_Orgs">
-								<b><li><a href="{{$key}}">{{ $value.Dn }}</a></li></b>
+								<b><li><a href="{{$key}}">{{ $value.ORGName }}</a></li></b>
 							</td>
 						</tr>
 				{{ end }}
-				{{if $value.Name }}
+				{{if $value.USERName }}
+					{{if $value.FullName }}
 						<tr>
 							<td class="UserInfo_Title">
-								<h3><a>{{ $value.Name }}</a></h3>
+								<h3><a>{{ $value.FullName }}</a></h3>
 							</td>
 						</tr>
+					{{ end }}
 						<tr>
 							<td>
 								<table>
-								{{if $value.BusinessCategory }}
+<!-- LastName
+FirstName
+UID -->
+								{{if $value.Position }}
 									<tr>
 										<td class="UserInfo_leftHead">Должность</td>
-										<td class="UserInfo_range"><a>{{ $value.BusinessCategory }}</a></td>
+										<td class="UserInfo_range"><a>{{ $value.Position }}</a></td>
 									</tr>
 								{{ end }}
-								{{if $value.TelephoneNumber }}
+								{{if $value.PhoneInt }}
 									<tr>
 										<td class="UserInfo_leftHead">Внутренний номер</td>
-										<td class="UserInfo_range"><a>{{ $value.TelephoneNumber }}</a></td>
+										<td class="UserInfo_range"><a>{{ $value.PhoneInt }}</a></td>
 									</tr>
 								{{ end }}
 								{{if $value.Mobile }}
@@ -37,10 +42,16 @@
 										<td class="UserInfo_range"><a>{{ $value.Mobile }}</a></td>
 									</tr>
 								{{ end }}
-								{{if $value.Pager }}
+								{{if $value.PhoneExt }}
 									<tr>
 										<td class="UserInfo_leftHead">Городской номер</td>
-										<td class="UserInfo_range"><a>{{ $value.Pager }}</a></td>
+										<td class="UserInfo_range"><a>{{ $value.PhoneExt }}</a></td>
+									</tr>
+								{{ end }}
+								{{if $value.ADLogin }}
+									<tr>
+										<td class="UserInfo_leftHead">Логин Active Directory</td>
+										<td class="UserInfo_range"><a>{{ $value.ADLogin }}</a></td>
 									</tr>
 								{{ end }}
 								{{if $value.Mail }}
@@ -49,7 +60,7 @@
 										<td class="UserInfo_mailto"><a href="mailto:{{$value.Mail}}">{{ $value.Mail }}</a></td>
 									</tr>
 								{{ end }}
-								{{if $value.URL }}
+								{{if $value.URLName }}
 									<tr>
 										<td class="UserInfo_leftHead">Место работы</td>
 										<td class="UserInfo_workplace"><b><a href="{{$value.URL}}">{{ $value.URLName }}</a></b></td>

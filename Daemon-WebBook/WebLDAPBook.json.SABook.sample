@@ -8,8 +8,9 @@
 	"WLB_Listen_PORT":		3000,
 
 	"WLB_LDAP_ATTR":	[
-					["o",""],
-					["cn",""],
+					["o","ORGName"],
+					["cn","USERName"],
+					["entryDN","DN"],
 					["sn","LastName"],
 					["givenName","FirstName"],
 					["displayName","FullName"],
@@ -18,11 +19,9 @@
 					["businessCategory","Position"],
 					["telephoneNumber","PhoneInt"],
 					["mobile","Mobile"],
-					["pager","PhoneExt"],
-					["entryDN",""]
+					["pager","PhoneExt"]
 				],
 
 	"LOG_File":			"/var/log/ABook/WebLDAPBook.log",
 	"PID_File":			"/var/run/WebLDAPBook.pid"
 }
-

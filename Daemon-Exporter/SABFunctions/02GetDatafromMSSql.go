@@ -14,7 +14,8 @@ import (
 	_ "github.com/denisenkom/go-mssqldb"
 
 // Translit
-	"github.com/BestianRU/SABookServices/ForeignModules/unidecode"
+	"github.com/BestianRU/gounidecode/unidecode"
+//	"github.com/BestianRU/SABookServices/ForeignModules/unidecode"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 	"github.com/BestianRU/SABookServices/Daemon-Exporter/SABDefine"

@@ -11,7 +11,7 @@ import (
 	"net/http"
 
 //LDAP
-	"github.com/BestianRU/SABookServices/ForeignModules/ldap.v1"
+	"github.com/BestianRU/johnweldon/ldap"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 //	"github.com/kabukky/httpscerts"
@@ -20,7 +20,7 @@ import (
 
 const (
 	pName				=	string("SABook Web Address Book")
-	pVer				=	string("1 alpha 2015.09.17.23.45")
+	pVer				=	string("1 alpha 2015.09.21.23.45")
 )
 
 var	(
@@ -40,28 +40,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	type tList struct {
 		URL 				string
 		URLName				string
-		Dn 					string
-		Name 				string
-		BusinessCategory	string
-		TelephoneNumber		string
+		ORGName 			string
+		USERName 			string
+		FullName 			string
+		PhoneInt			string
+		PhoneExt			string
 		Mobile				string
-		Pager				string
 		Mail 				string
+		Position			string
+		ADLogin				string
 	}
 
 	var (
-		ftype				string
-		fdn					string
-		foname				string
-		fname				string
-		fbusinessCategory	string
-		ftelephoneNumber	string
-		fmobile				string
-		fpager				string
-		fmail				string
 		fPath				string
 		fURL				string
-		fURL_Name			string
+		fURLName			string
 
 		dn 					string
 		dn_back				string
@@ -73,7 +66,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 		ldapSearchMode	=	int(1)
 
-		ckl1, ckl2			int
+		ckl1, ckl2, ckl3	int
 
 		ldap_Attr			[]string
 
@@ -157,8 +150,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("%s ... Trying to connect server %d of %d: %s", remIPClient, ldap_count+1, len(rconf.LDAP_URL), rconf.LDAP_URL[ldap_count][0])
 		l, err = ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
 		if err != nil {
-			fmt.Fprintf(w, err.Error())
-			log.Printf("LDAP::Initialize() error: %v\n", err)
+//			fmt.Fprintf(w, err.Error())
+//			log.Printf("LDAP::Initialize() error: %v\n", err)
 			continue
 		}
 
@@ -223,72 +216,38 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if len(sr.Entries)>0 {
 		dnList := make (map[string]tList, len(sr.Entries))
 		for _, entry := range sr.Entries {
-			fdn=""
-			foname=""
-			fname=""
-			ftype=""
-			fbusinessCategory=""
-			ftelephoneNumber=""
-			fmobile=""
-			fpager=""
-			fmail=""
+			fType		:= ""
+			fField 		:= make	(map[string]string, len(rconf.WLB_LDAP_ATTR))
 			for _, attr := range entry.Attributes {
-				if attr.Name == "o" {
-					x  := strings.Join(attr.Values, ",")
-					foname=fmt.Sprintf("%s", x)
-					ftype="Org"
-				}
-				if attr.Name == "displayName" {
-					x  := strings.Join(attr.Values, ",")
-					fname=fmt.Sprintf("%s", x)
-					ftype="User"
-				}
-				if attr.Name == "entryDN" {
-					x  := strings.Join(attr.Values, ",")
-					fdn=fmt.Sprintf("%s", x)
-				}
-				if attr.Name == "businessCategory" {
-					x  := strings.Join(attr.Values, ",")
-					fbusinessCategory=fmt.Sprintf("%s", x)
-				}
-				if attr.Name == "telephoneNumber" {
-					x  := strings.Join(attr.Values, ",")
-					ftelephoneNumber=fmt.Sprintf("%s", x)
-				}
-				if attr.Name == "mobile" {
-					x  := strings.Join(attr.Values, ",")
-					fmobile=fmt.Sprintf("%s", x)
-				}
-				if attr.Name == "pager" {
-					x  := strings.Join(attr.Values, ",")
-					fpager=fmt.Sprintf("%s", x)
-				}
-				if attr.Name == "mail" {
-					x  := strings.Join(attr.Values, ",")
-					fmail=fmt.Sprintf("%s", x)
+				for ckl1:=0;ckl1<len(rconf.WLB_LDAP_ATTR);ckl1++ {
+					if attr.Name == rconf.WLB_LDAP_ATTR[ckl1][0] {
+						fField[rconf.WLB_LDAP_ATTR[ckl1][1]]=fmt.Sprintf("%s", strings.Join(attr.Values, ","))
+//						fmt.Printf("Name: %s==%s --> %s = %s\n", attr.Name, rconf.WLB_LDAP_ATTR[ckl1][0], rconf.WLB_LDAP_ATTR[ckl1][1], fField[rconf.WLB_LDAP_ATTR[ckl1][1]])
+						if rconf.WLB_LDAP_ATTR[ckl1][1] == "ORGName" {
+							fType="Org"
+						}
+						if rconf.WLB_LDAP_ATTR[ckl1][1] == "USERName" {
+							fType="User"
+						}
+					}
 				}
 			}
-			if fdn!="" && (fname!="" || foname!=""){
-				fPath=fdn
+			if fField["DN"]!="" && (fField["USERName"]!="" || fField["ORGName"]!=""){
+				fPath=fField["DN"]
 				fPath=strings.Replace(strings.ToLower(fPath), ","+strings.ToLower(rconf.LDAP_URL[ldap_count][3]), "", -1)
 				fPath_Split:=strings.Split(fPath, ",")
-				if ftype=="User" {
-//					log.Printf("%s", fPath)
-				}
-				fURL_Name=""
+				fURLName=""
 				for ckl1=0;ckl1<len(fPath_Split)-1;ckl1++ {
 					fPath_Strip:=""
 					for ckl2=ckl1+1;ckl2<len(fPath_Split);ckl2++ {
 						fPath_Strip=fmt.Sprintf("%s%s,", fPath_Strip, fPath_Split[ckl2])
 					}
-					if ftype=="User" {
+					if fType=="User" {
 						fPath_Strip=fmt.Sprintf("%s%s", fPath_Strip, rconf.LDAP_URL[ldap_count][3])
 						if ckl1==0 {
 							fURL=fPath_Strip
 						}
-//						log.Printf("%s", fPath_Strip)
-
-
+//						log.Printf("X1: %s", fPath_Strip)
 						subsearch := ldap.NewSearchRequest(fPath_Strip, 0, ldap.NeverDerefAliases, 0, 0, false, rconf.LDAP_URL[ldap_count][4], ldap_Attr, nil)
 						subsr, err := l.Search(subsearch)
 						if err != nil {
@@ -296,36 +255,58 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 							log.Printf("LDAP::Search() error: %v\n", err)
 						}
 
-//						log.Printf("\t\t\t%s / %s / %d\n", fPath_Strip, rconf.LDAP_URL[ldap_count][4], len(subsr.Entries))
-
+//						log.Printf("Y1: %s / %s / %d\n", fPath_Strip, rconf.LDAP_URL[ldap_count][4], len(subsr.Entries))
 						if len(subsr.Entries)>0 {
 							for _, subentry := range subsr.Entries {
 								for _, subattr := range subentry.Attributes {
-									if subattr.Name == "o" {
-										if ckl1==0 {
-											fURL_Name=fmt.Sprintf("%s", strings.Join(subattr.Values, ","))
-										}else{
-											fURL_Name=fmt.Sprintf("%s / %s", strings.Join(subattr.Values, ","), fURL_Name)
+									for ckl3=0;ckl3<len(rconf.WLB_LDAP_ATTR);ckl3++ {
+										if subattr.Name == rconf.WLB_LDAP_ATTR[ckl3][0] {
+											if rconf.WLB_LDAP_ATTR[ckl3][1] == "ORGName" {
+												if ckl1==0 {
+													fURLName=fmt.Sprintf("%s", strings.Join(subattr.Values, ","))
+												}else{
+													fURLName=fmt.Sprintf("%s / %s", strings.Join(subattr.Values, ","), fURLName)
+												}
+//												log.Printf("Z1: %s", fURLName)
+											}
 										}
-//										log.Printf("%s", fURL_Name)
 									}
 								}
 							}
-
 						}
-
-
-
 					}
 				}
 
-				fdn=fmt.Sprintf("/Go%s?dn=%s", ftype, fdn)
-				fURL=fmt.Sprintf("/Go%s?dn=%s", ftype, fURL)
-				log.Printf("%s <-- %s", remIPClient, fdn)
-				dnList[fdn]=tList{URL: fURL, URLName: fURL_Name, Dn: foname, Name: fname, BusinessCategory: fbusinessCategory, TelephoneNumber: ftelephoneNumber, Mobile: fmobile, Pager: fpager, Mail: fmail}
-			}
-		}
+				fField["DN"]=strings.Replace(strings.ToLower(fField["DN"]), "/", ",", -1)
+				fmt.Sprintf("/Go%s?dn=%s", fType, fField["DN"])
+				fField["DN"]=fmt.Sprintf("/Go%s?dn=%s", fType, fField["DN"])
+				fURL=fmt.Sprintf("/Go%s?dn=%s", fType, fURL)
+				log.Printf("%s <-- %s", remIPClient, fField["DN"])
+				dnList[fField["DN"]]=tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"]}
+/*
+				fmt.Printf("A dnList URL: %v\n", dnList[fField["DN"]].URL)
+				fmt.Printf("A dnList URLName: %v\n", dnList[fField["DN"]].URLName)
+				fmt.Printf("A dnList ORGName: %v\n", dnList[fField["DN"]].ORGName)
+				fmt.Printf("A dnList USERName: %v\n", dnList[fField["DN"]].USERName)
+				fmt.Printf("A dnList FullName: %v\n", dnList[fField["DN"]].FullName)
+				fmt.Printf("A dnList PhoneInt: %v\n", dnList[fField["DN"]].PhoneInt)
+				fmt.Printf("A dnList PhoneExt: %v\n", dnList[fField["DN"]].PhoneExt)
+				fmt.Printf("A dnList Mobile: %v\n", dnList[fField["DN"]].Mobile)
+				fmt.Printf("A dnList Mail: %v\n", dnList[fField["DN"]].Mail)
+				fmt.Printf("A dnList Position: %v\n", dnList[fField["DN"]].Position)
 
+				fmt.Printf("B dnList fURL: %v\n", fURL)
+				fmt.Printf("B dnList fURLName: %v\n", fURLName)
+				fmt.Printf("B dnList fField[ORGName]: %v\n", fField["ORGName"])
+				fmt.Printf("B dnList fField[USERName]: %v\n", fField["USERName"])
+				fmt.Printf("B dnList fField[FullName]: %v\n", fField["FullName"])
+				fmt.Printf("B dnList fField[PhoneInt]: %v\n", fField["PhoneInt"])
+				fmt.Printf("B dnList fField[PhoneExt]: %v\n", fField["PhoneExt"])
+				fmt.Printf("B dnList fField[Mobile]: %v\n", fField["Mobile"])
+				fmt.Printf("B dnList fField[Mail]: %v\n", fField["Mail"])
+				fmt.Printf("B dnList fField[Position]: %v\n", fField["Position"])
+*/			}
+		}
 		t.ExecuteTemplate(w, "index", dnList)
 	}
 
