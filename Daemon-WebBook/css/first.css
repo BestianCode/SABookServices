@@ -1,3 +1,13 @@
+td.InsteadOfSearch {
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: center;
+    color: #005500;
+    white-space: nowrap;
+    padding-left: 15px;
+    border: 1;
+}
 td.List_Orgs {
     font-family: 'times new roman', times, serif;
     font-size: 16px;

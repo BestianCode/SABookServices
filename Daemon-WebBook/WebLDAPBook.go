@@ -9,9 +9,11 @@ import (
 	"strings"
 	"html/template"
 	"net/http"
+	"strconv"
 
 //LDAP
-	"github.com/BestianRU/johnweldon/ldap"
+//	"github.com/go-ldap/ldap"
+	"github.com/BestianRU/go-ldap/ldap"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 //	"github.com/kabukky/httpscerts"
@@ -100,7 +102,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)(cn=*%s*))",unidecode.Unidecode(get_cn))
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)((displayName=*%s*)))",get_cn)
 		ldap_Search=fmt.Sprintf("(|(displayName=*%s*)(cn=*%s*))", get_cn, get_cn)
-//		ldap_Search=fmt.Sprintf("(cn=*%s*)",get_cn)
+//		ldap_Search=fmt.Sprintf("(cn=%s)",get_cn)
 		ldapSearchMode=2
 	}
 
@@ -109,7 +111,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("->")
 	log.Printf("--> %s", pVersion)
 	log.Printf("->")
-	log.Println(remIPClient+" --> https://"+r.Host+r.RequestURI)
+	ucurl, _ :=strconv.Unquote(r.RequestURI)
+	log.Println(remIPClient+" --> http://"+r.Host+ucurl)
 	log.Printf("%s ++> DN: %s / CN: %s / Mode: %d / Def.DN: %s", remIPClient, dn, ldap_Search, ldapSearchMode, rconf.LDAP_URL[ldap_count][3])
 
 	if strings.ToLower(dn) != strings.ToLower(rconf.LDAP_URL[ldap_count][3]) {

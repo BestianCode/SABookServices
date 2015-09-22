@@ -24,6 +24,7 @@
 								</form>
 							</td>
 		{{ end }}
+		{{ if .PrevDN }}
 							<td>
 								<form name="Search" action="/GoOrg" method="get">
 									<input name="cn" maxlength="64" size="64" value="" type="text" />
@@ -31,6 +32,11 @@
 									<input name="Search" value="искать" type=submit>
 								</form>
 							</td>
+		{{ else }}
+							<td class="InsteadOfSearch">
+								<b>... для поиска нужно выбрать раздел ...</b>
+							</td>
+		{{ end }}
 						</tr>
 					</table>
 				</td>
