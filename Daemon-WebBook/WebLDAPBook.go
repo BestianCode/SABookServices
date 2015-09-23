@@ -12,8 +12,7 @@ import (
 	"strconv"
 
 //LDAP
-//	"github.com/go-ldap/ldap"
-	"github.com/BestianRU/go-ldap/ldap"
+	"github.com/go-ldap/ldap"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 //	"github.com/kabukky/httpscerts"
@@ -22,7 +21,7 @@ import (
 
 const (
 	pName				=	string("SABook Web Address Book")
-	pVer				=	string("1 alpha 2015.09.21.23.45")
+	pVer				=	string("1 alpha 2015.09.23.21.00")
 )
 
 var	(

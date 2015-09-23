@@ -12,7 +12,7 @@ import (
 	_ "github.com/lib/pq"
 
 //LDAP
-	"github.com/BestianRU/go-ldap/ldap"
+	"github.com/go-ldap/ldap"
 
 // Translit
 	"github.com/BestianRU/gounidecode/unidecode"
