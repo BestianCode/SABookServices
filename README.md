@@ -17,7 +17,7 @@
 * 
 * PATH="$PATH:/usr/local/instantclient_12_1"
 * 
-* go get github.com/BestianRU/ldap
+* go get github.com/go-ldap/ldap
 * go get github.com/BestianRU/gounidecode
 * go get gopkg.in/goracle.v1
 * go get github.com/lib/pq
