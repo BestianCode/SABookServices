@@ -70,7 +70,6 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ckl1, ckl2, ckl3	int
 
 		ldap_Attr			[]string
-
 	)
 
 	ldap_Attr = make ([]string, len(rconf.WLB_LDAP_ATTR))
@@ -98,10 +97,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if get_cn == "" {
 		ldap_Search=rconf.LDAP_URL[ldap_count][4]
 	}else{
+
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)(cn=*%s*))",unidecode.Unidecode(get_cn))
 //		ldap_Search=fmt.Sprintf("(&(objectClass=*)((displayName=*%s*)))",get_cn)
-		ldap_Search=fmt.Sprintf("(|(displayName=*%s*)(cn=*%s*))", get_cn, get_cn)
+		ldap_Search=fmt.Sprintf("(&(objectClass=inetOrgPerson)(displayName=*%s*))", get_cn)
+//		ldap_Search=fmt.Sprintf("(|(displayName=*%s*))", get_cn)
+//		ldap_Search=fmt.Sprintf("(%s)", search_str)
+//		ldap_Search=fmt.Sprintf("(displayName=*%s*)", get_cn)
 //		ldap_Search=fmt.Sprintf("(cn=%s)",get_cn)
+//		ldap_Search=fmt.Sprintf("(&(objectClass=)(cn=*%s*))",unidecode.Unidecode(get_cn))
 		ldapSearchMode=2
 	}
 
