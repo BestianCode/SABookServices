@@ -1,4 +1,9 @@
 {
+	"PG_DSN":		"host=xxx user=pguser password=pgpass dbname=asterisk-pbook sslmode=disable",
+
+	"WLB_MailBT":		"admin@example.com",
+	"WLB_SQL_PreFetch":	"Yes",
+
 	"LDAP_URL":		[
 					["URL1:389", "", "", "O=ORG1", "(objectClass=*)"],
 					["URL2:389", "User2", "Pass2", "O=ORG2", "(objectClass=*)"]
@@ -22,6 +27,6 @@
 					["pager","PhoneExt"]
 				],
 
-	"LOG_File":			"/var/log/ABook/WebLDAPBook.log",
-	"PID_File":			"/var/run/WebLDAPBook.pid"
+	"LOG_File":		"/var/log/ABook/WebLDAPBook.log",
+	"PID_File":		"/var/run/WebLDAPBook.pid"
 }

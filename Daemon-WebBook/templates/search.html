@@ -2,41 +2,71 @@
 			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
 			<tr>
 				<td>
+		{{ if .xMessage }}
 					<table>
 						<tr>
-							<td>
-								<form>
+							<td class="text_warning">{{.xMessage}}</td>
+						</tr>
+						<tr><td><hr noshade size=1 align=left width=10%></td></tr>
+					</table>
+		{{ end }}
+					<table>
+						<tr>
+							<form>
+								<td>
 									<input Type="button" value="<- назад" onClick="history.go(-1);return true;">
-								</form>
-							</td>
+								</td>
+							</form>
 		{{ if .PrevDN }}
-							<td>
-								<form name="GoToBack" action="/GoOrg" method="get">
+							<form name="GoToBack" action="/GoOrg" method="get">
+								<td>
 									<input name="dn" value="{{.PrevDN}}" type=hidden>
 									<input name="GoToBack" value="^ вверх ^" type=submit>
-								</form>
-							</td>
+
+								</td>
+							</form>
 		{{ end }}
 		{{ if .GoHome }}
-							<td>
-								<form name="GoToStart" action="/GoOrg" method="get">
+							<form name="GoToStart" action="/GoOrg" method="get">
+								<td>
 									<input name="GoToStart" value="на главную" type=submit>
-								</form>
-							</td>
+								</td>
+							</form>
 		{{ end }}
-		{{ if .PrevDN }}
-							<td>
-								<form name="Search" action="/GoOrg" method="get">
-									<input name="cn" maxlength="64" size="64" value="" type="text" />
+						</tr>
+					</table>
+				</td></tr>
+			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
+				<tr><td>
+					<table>
+						<tr>
+		{{ if .xSearch }}
+							<form name="Search" action="/GoOrg" method="get">
+								<td class="UserInfo_leftHead">Имя:</td>
+								<td><input name="FirstName" maxlength="64" size="48" value="" type="text" /></td>
+							</tr><tr>
+								<td class="UserInfo_leftHead">Фамилия:</td>
+								<td><input name="LastName" maxlength="64" size="48" value="" type="text" /></td>
+							</tr><tr>
+								<td class="UserInfo_leftHead">Полное имя:</td>
+								<td><input name="cn" maxlength="64" size="48" value="" type="text" /></td>
+<!--							</tr><tr>
+								<td>&nbsp;</td>
+								<td class="text_comment"><a>Используйте символ <b><font size=+1>*</font></b> вместо недостающей части имени или фамилии<br>Например <u>Богоявлен<b><font size=+1>*</font></b></u> или <u>Бугров Д<b><font size=+1>*</font></b></u></a>
+								</td> -->
+							</tr><tr>
+								<td>&nbsp;</td>
+								<td>
 									<input name="dn" value="{{.DN}}" type=hidden>
 									<input name="Search" value="искать" type=submit>
-								</form>
-							</td>
+								</td>
+							</form>
 		{{ else }}
 							<td class="InsteadOfSearch">
 								<b>... для поиска нужно выбрать раздел ...</b>
 							</td>
 		{{ end }}
+							
 						</tr>
 					</table>
 				</td>

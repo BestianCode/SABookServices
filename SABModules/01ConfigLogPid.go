@@ -47,6 +47,8 @@ type	Config_STR	struct {
 	WLB_Listen_IP		string
 	WLB_Listen_PORT		int
 	WLB_LDAP_ATTR		[][]string
+	WLB_SQL_PreFetch	string
+	WLB_MailBT			string
 }
 
 var Flog_File *os.File

@@ -49,11 +49,32 @@ td.UserInfo_mailto {
     text-align: left;
 }
 td.Footer_Version {
-    font-size: 8px;
+    font-size: 10px;
     font-weight: normal;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
-    color: #DDDDDD;
+    color: #555555;
+}
+td.text_comment {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 12px;
+    text-align: left;
+    color: #880000;
+}
+td.text_warning {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: left;
+    white-space: wrap;
+    color: #FF0000;
+}
+td.text_bugreport {
+    font-size: 8px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+    color: #880000;
 }
 button,
 input,
