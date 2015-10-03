@@ -41,7 +41,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.09.29.00.00")
+	pVer      = string("1 alpha 2015.10.04.02.00")
 	userLimit = 20
 )
 
