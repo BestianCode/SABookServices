@@ -4,6 +4,8 @@
 	"WLB_MailBT":		"admin@example.com",
 	"WLB_SQL_PreFetch":	"Yes",
 
+	"Sleep_Time":		3600,
+
 	"LDAP_URL":		[
 					["URL1:389", "", "", "O=ORG1", "(objectClass=*)"],
 					["URL2:389", "User2", "Pass2", "O=ORG2", "(objectClass=*)"]
@@ -27,6 +29,8 @@
 					["pager","PhoneExt"]
 				],
 
-	"LOG_File":		"/var/log/ABook/WebLDAPBook.log",
-	"PID_File":		"/var/run/WebLDAPBook.pid"
+	"WLB_SQLite_DB":	"./WebLDAPBook.sqlite3",
+
+	"LOG_File":			"/var/log/ABook/WebLDAPBook.log",
+	"PID_File":			"/var/run/WebLDAPBook.pid"
 }
