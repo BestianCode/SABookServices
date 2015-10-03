@@ -52,6 +52,7 @@ var (
 	pVersion        string
 	rconf           SABModules.Config_STR
 	ldap_count      = int(0)
+	db              *sql.DB
 )
 
 func initLDAPConnector() string {
@@ -214,14 +215,14 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		if strings.ToLower(rconf.WLB_SQL_PreFetch) == "yes" {
 			log.Printf("%s ++> SQL Search: %s\n", remIPClient, get_cn)
-			pgdb, err := sql.Open("sqlite3", rconf.WLB_SQLite_DB)
-			//			pgdb, err := sql.Open("postgres", rconf.PG_DSN)
-			if err != nil {
-				log.Printf("PG::Open() error: %v\n", err)
-				return
-			}
-			defer pgdb.Close()
-
+			/*			db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
+						//			db, err := sql.Open("postgres", rconf.PG_DSN)
+						if err != nil {
+							log.Printf("PG::Open() error: %v\n", err)
+							return
+						}
+						defer db.Close()
+			*/
 			//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%') and lower(x.dn) like lower('%%%s');", get_cn, dn)
 			//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%');", get_cn)
 			//			queryx := "select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid"
@@ -237,7 +238,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			queryx = fmt.Sprintf("%s;", queryx)
 			//			log.Printf("SQL: %s\n", queryx)
-			rows, err := pgdb.Query(queryx)
+			rows, err := db.Query(queryx)
 			if err != nil {
 				fmt.Printf("SQL Error: %s\n", queryx)
 				log.Printf("PG::Query() Check LDAP tables error: %v\n", err)
@@ -430,6 +431,7 @@ func sqliteUpdate() {
 	var (
 		queryx     string
 		ckl1, ckl2 int
+		err        error
 
 		query_create = string(`
 CREATE TABLE IF NOT EXISTS ldap (
@@ -462,25 +464,6 @@ insert into ldap (FullName, LastName, FirstName, DN)
 	SABModules.Log_ON(&rconf)
 
 	log.Printf("SQLite Update ***** Starting...\n")
-
-	db, err := sql.Open("sqlite3", rconf.WLB_SQLite_DB)
-	if err != nil {
-		log.Printf("SQLite::Open() error: %v\n", err)
-		return
-	}
-	defer db.Close()
-
-	err = db.Ping()
-	if err != nil {
-		log.Printf("SQLite::Ping() error: %v\n", err)
-		return
-	}
-
-	_, err = db.Begin()
-	if err != nil {
-		log.Printf("SQLite::Begin() error: %v\n", err)
-		return
-	}
 
 	_, err = db.Exec(query_create)
 	if err != nil {
@@ -593,6 +576,8 @@ insert into ldap (FullName, LastName, FirstName, DN)
 
 func main() {
 
+	var err error
+
 	pVersion = fmt.Sprintf("%s V%s", pName, pVer)
 
 	fmt.Printf("\n\t%s\n\n", pVersion)
@@ -657,6 +642,25 @@ func main() {
 	log.Printf("--> %s", pVersion)
 	log.Printf("---> I'm Ready...")
 	log.Printf(" _")
+
+	db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
+	if err != nil {
+		log.Printf("SQLite::Open() error: %v\n", err)
+		return
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		log.Printf("SQLite::Ping() error: %v\n", err)
+		return
+	}
+
+	_, err = db.Begin()
+	if err != nil {
+		log.Printf("SQLite::Begin() error: %v\n", err)
+		return
+	}
 
 	SABModules.Log_OFF()
 
