@@ -459,145 +459,135 @@ insert into ldap (FullName, LastName, FirstName, DN)
 	ldap_Attr := make([]string, 4)
 	userdb := make(map[string]string, 4)
 
-	for {
+	SABModules.Log_ON(&rconf)
 
-		SABModules.Log_ON(&rconf)
+	log.Printf("SQLite Update ***** Starting...\n")
 
-		log.Printf("SQLite Update ***** Starting...\n")
+	db, err := sql.Open("sqlite3", rconf.WLB_SQLite_DB)
+	if err != nil {
+		log.Printf("SQLite::Open() error: %v\n", err)
+		return
+	}
+	defer db.Close()
 
-		db, err := sql.Open("sqlite3", rconf.WLB_SQLite_DB)
-		if err != nil {
-			log.Printf("SQLite::Open() error: %v\n", err)
-			return
+	err = db.Ping()
+	if err != nil {
+		log.Printf("SQLite::Ping() error: %v\n", err)
+		return
+	}
+
+	_, err = db.Begin()
+	if err != nil {
+		log.Printf("SQLite::Begin() error: %v\n", err)
+		return
+	}
+
+	_, err = db.Exec(query_create)
+	if err != nil {
+		fmt.Printf("SQL Error: %s\n", queryx)
+		log.Printf("SQLite::Query() error: %v\n", err)
+		return
+	}
+
+	_, err = db.Exec(query_clean)
+	if err != nil {
+		fmt.Printf("SQL Error: %s\n", queryx)
+		log.Printf("SQLite::Query() error: %v\n", err)
+		return
+	}
+
+	if initLDAPConnector() == "error" {
+		return
+	}
+
+	l, err := ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
+	if err != nil {
+		//		fmt.Fprintf(w, err.Error())
+		log.Printf("LDAP::Initialize() error: %v\n", err)
+		return
+	}
+
+	//		l.Debug = true
+	defer l.Close()
+
+	err = l.Bind(rconf.LDAP_URL[ldap_count][1], rconf.LDAP_URL[ldap_count][2])
+	if err != nil {
+		//		fmt.Fprintf(w, err.Error())
+		log.Printf("LDAP::Bind() error: %v\n", err)
+		return
+	}
+
+	for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
+		if rconf.WLB_LDAP_ATTR[ckl1][1] == "FullName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "FirstName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "LastName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "DN" {
+			//			ldap_Attr[rconf.WLB_LDAP_ATTR[ckl1][1]] = rconf.WLB_LDAP_ATTR[ckl1][0]
+			ldap_Attr[ckl2] = rconf.WLB_LDAP_ATTR[ckl1][0]
+			ckl2++
 		}
-		defer db.Close()
+	}
 
-		err = db.Ping()
-		if err != nil {
-			log.Printf("SQLite::Ping() error: %v\n", err)
-			return
-		}
+	search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(displayName=*смирнов*)", ldap_Attr, nil)
 
-		_, err = db.Begin()
-		if err != nil {
-			log.Printf("SQLite::Begin() error: %v\n", err)
-			return
-		}
+	//	log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
 
-		_, err = db.Exec(query_create)
-		if err != nil {
-			fmt.Printf("SQL Error: %s\n", queryx)
-			log.Printf("SQLite::Query() error: %v\n", err)
-			return
-		}
+	sr, err := l.Search(search)
+	if err != nil {
+		//		fmt.Fprintf(w, err.Error())
+		log.Printf("LDAP::Search() error: %v\n", err)
+		return
+	}
 
-		_, err = db.Exec(query_clean)
-		if err != nil {
-			fmt.Printf("SQL Error: %s\n", queryx)
-			log.Printf("SQLite::Query() error: %v\n", err)
-			return
-		}
+	//	fmt.Printf("\n\nSearch: %v", search)
 
-		if initLDAPConnector() == "error" {
-			return
-		}
+	log.Printf("SQLite Update ***** search: %s // found: %d\n", search.Filter, len(sr.Entries))
 
-		l, err := ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
-		if err != nil {
-			//		fmt.Fprintf(w, err.Error())
-			log.Printf("LDAP::Initialize() error: %v\n", err)
-			return
-		}
-
-		//		l.Debug = true
-		defer l.Close()
-
-		err = l.Bind(rconf.LDAP_URL[ldap_count][1], rconf.LDAP_URL[ldap_count][2])
-		if err != nil {
-			//		fmt.Fprintf(w, err.Error())
-			log.Printf("LDAP::Bind() error: %v\n", err)
-			return
-		}
-
-		for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
-			if rconf.WLB_LDAP_ATTR[ckl1][1] == "FullName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "FirstName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "LastName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "DN" {
-				//			ldap_Attr[rconf.WLB_LDAP_ATTR[ckl1][1]] = rconf.WLB_LDAP_ATTR[ckl1][0]
-				ldap_Attr[ckl2] = rconf.WLB_LDAP_ATTR[ckl1][0]
-				ckl2++
-			}
-		}
-
-		search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-		//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-		//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(displayName=*смирнов*)", ldap_Attr, nil)
-
-		//	log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
-
-		sr, err := l.Search(search)
-		if err != nil {
-			//		fmt.Fprintf(w, err.Error())
-			log.Printf("LDAP::Search() error: %v\n", err)
-			return
-		}
-
-		//	fmt.Printf("\n\nSearch: %v", search)
-
-		log.Printf("SQLite Update ***** search: %s // found: %d\n", search.Filter, len(sr.Entries))
-
-		if len(sr.Entries) > 0 {
-			ckl2 = 0
-			for _, entry := range sr.Entries {
-				for _, attr := range entry.Attributes {
-					//fmt.Printf("X: %s, %s\n", attr.Name, fmt.Sprintf("%s", strings.Join(attr.Values, ",")))
-					for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
-						if rconf.WLB_LDAP_ATTR[ckl1][0] == attr.Name {
-							userdb[rconf.WLB_LDAP_ATTR[ckl1][1]] = fmt.Sprintf("%s", strings.ToLower(strings.Join(attr.Values, ",")))
-						}
+	if len(sr.Entries) > 0 {
+		ckl2 = 0
+		for _, entry := range sr.Entries {
+			for _, attr := range entry.Attributes {
+				//fmt.Printf("X: %s, %s\n", attr.Name, fmt.Sprintf("%s", strings.Join(attr.Values, ",")))
+				for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
+					if rconf.WLB_LDAP_ATTR[ckl1][0] == attr.Name {
+						userdb[rconf.WLB_LDAP_ATTR[ckl1][1]] = fmt.Sprintf("%s", strings.ToLower(strings.Join(attr.Values, ",")))
 					}
 				}
-				stmt, err := db.Prepare("INSERT INTO ldap_cache (FullName, LastName, FirstName, DN) values (?,?,?,?)")
-				if err != nil {
-					log.Printf("SQLite::Prepare() error: %v\n", err)
-					return
-				}
-				_, err = stmt.Exec(userdb["FullName"], userdb["LastName"], userdb["FirstName"], userdb["DN"])
-				//			if err != nil {
-				//				log.Printf("SQLite::Exec() error: %v\n", err)
-				//			}
-				if ckl2 > 0 && ckl2 == int(ckl2/50)*50 {
-					log.Printf("SQLite Update ***** %7d elements passed...\n", ckl2)
-				}
-				ckl2++
 			}
-			log.Printf("SQLite Update ***** %7s elements passed...\n", "All")
+			stmt, err := db.Prepare("INSERT INTO ldap_cache (FullName, LastName, FirstName, DN) values (?,?,?,?)")
+			if err != nil {
+				log.Printf("SQLite::Prepare() error: %v\n", err)
+				return
+			}
+			_, err = stmt.Exec(userdb["FullName"], userdb["LastName"], userdb["FirstName"], userdb["DN"])
+			//			if err != nil {
+			//				log.Printf("SQLite::Exec() error: %v\n", err)
+			//			}
+			if ckl2 > 0 && ckl2 == int(ckl2/50)*50 {
+				log.Printf("SQLite Update ***** %7d elements passed...\n", ckl2)
+			}
+			ckl2++
 		}
-
-		_, err = db.Exec(query_update)
-		if err != nil {
-			fmt.Printf("SQL Error: %s\n", queryx)
-			log.Printf("SQLite::Query() error: %v\n", err)
-			return
-		}
-
-		_, err = db.Exec(query_clean)
-		if err != nil {
-			fmt.Printf("SQL Error: %s\n", queryx)
-			log.Printf("SQLite::Query() error: %v\n", err)
-			return
-		}
-
-		log.Printf("SQLite Update ***** Completed!\n")
-
-		log.Printf("SQLite Update ***** Sleep for %d sec...", rconf.Sleep_Time)
-
-		db.Close()
-		l.Close()
-
-		SABModules.Log_OFF()
-
-		time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
-
+		log.Printf("SQLite Update ***** %7s elements passed...\n", "All")
 	}
+
+	_, err = db.Exec(query_update)
+	if err != nil {
+		fmt.Printf("SQL Error: %s\n", queryx)
+		log.Printf("SQLite::Query() error: %v\n", err)
+		return
+	}
+
+	_, err = db.Exec(query_clean)
+	if err != nil {
+		fmt.Printf("SQL Error: %s\n", queryx)
+		log.Printf("SQLite::Query() error: %v\n", err)
+		return
+	}
+
+	log.Printf("SQLite Update ***** Completed!\n")
+	log.Printf("SQLite Update ***** Sleep for %d sec...", rconf.Sleep_Time)
+
+	SABModules.Log_OFF()
 
 }
 
@@ -670,7 +660,12 @@ func main() {
 
 	SABModules.Log_OFF()
 
-	go sqliteUpdate()
+	go func() {
+		for {
+			sqliteUpdate()
+			time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
+		}
+	}()
 
 	http.ListenAndServe(rconf.WLB_Listen_IP+":"+fmt.Sprintf("%d", rconf.WLB_Listen_PORT), nil)
 }
