@@ -1,8 +1,5 @@
 {
-	"PG_DSN":		"host=xxx user=pguser password=pgpass dbname=asterisk-pbook sslmode=disable",
-
 	"WLB_MailBT":		"admin@example.com",
-	"WLB_SQL_PreFetch":	"Yes",
 
 	"Sleep_Time":		3600,
 

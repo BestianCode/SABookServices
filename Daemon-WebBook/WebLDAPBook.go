@@ -365,61 +365,50 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	if get_cn == "" && get_ln == "" && get_fn == "" {
 		ldap_Search = rconf.LDAP_URL[ldap_count][4]
 	} else {
-		if strings.ToLower(rconf.WLB_SQL_PreFetch) == "yes" {
-			log.Printf("%s ++> SQL Search: %s/%s/%s\n", remIPClient, get_cn, get_fn, get_ln)
-			/*			db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
-						//			db, err := sql.Open("postgres", rconf.PG_DSN)
-						if err != nil {
-							log.Printf("PG::Open() error: %v\n", err)
-							return
-						}
-						defer db.Close()
-			*/
-			//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%') and lower(x.dn) like lower('%%%s');", get_cn, dn)
-			//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%');", get_cn)
-			//			queryx := "select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid"
-			queryx := "select DN from ldap where 1=1"
-			if len(get_cn) > 1 {
-				queryx = fmt.Sprintf("%s and lower(FullName) like lower('%%%s%%')", queryx, strings.ToLower(get_cn))
-			}
-			if len(get_ln) > 1 {
-				queryx = fmt.Sprintf("%s and lower(LastName) like lower('%s%%')", queryx, strings.ToLower(get_ln))
-			}
-			if len(get_fn) > 1 {
-				queryx = fmt.Sprintf("%s and lower(FirstName) like lower('%s%%')", queryx, strings.ToLower(get_fn))
-			}
-			queryx = fmt.Sprintf("%s;", queryx)
-			//			log.Printf("SQL: %s\n", queryx)
-			rows, err := db.Query(queryx)
-			if err != nil {
-				fmt.Printf("SQL Error: %s\n", queryx)
-				log.Printf("PG::Query() Check LDAP tables error: %v\n", err)
-				return
-			}
-			xGetCkl = 0
-			for rows.Next() {
-				rows.Scan(&xGetDN[xGetCkl])
-				//				fmt.Println(xGetDN[xGetCkl], dn)
-				if strings.Contains(strings.ToLower(xGetDN[xGetCkl]), strings.ToLower(dn)) {
-					log.Printf("%s <-- SQL Found: %s\n", remIPClient, xGetDN[xGetCkl])
-					xGetCkl++
-					if xGetCkl > userLimit {
-						xMessage = fmt.Sprintf("Количество персон по вашему запросу привысило %d человек. Пожалуйста, задайте критерии более конкретно!", userLimit)
-						break
+		log.Printf("%s ++> SQL Search: %s/%s/%s\n", remIPClient, get_cn, get_fn, get_ln)
+		/*			db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
+					//			db, err := sql.Open("postgres", rconf.PG_DSN)
+					if err != nil {
+						log.Printf("PG::Open() error: %v\n", err)
+						return
 					}
+					defer db.Close()
+		*/
+		//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%') and lower(x.dn) like lower('%%%s');", get_cn, dn)
+		//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%');", get_cn)
+		//			queryx := "select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid"
+		queryx := "select DN from ldap where 1=1"
+		if len(get_cn) > 1 {
+			queryx = fmt.Sprintf("%s and lower(FullName) like lower('%%%s%%')", queryx, strings.ToLower(get_cn))
+		}
+		if len(get_ln) > 1 {
+			queryx = fmt.Sprintf("%s and lower(LastName) like lower('%s%%')", queryx, strings.ToLower(get_ln))
+		}
+		if len(get_fn) > 1 {
+			queryx = fmt.Sprintf("%s and lower(FirstName) like lower('%s%%')", queryx, strings.ToLower(get_fn))
+		}
+		queryx = fmt.Sprintf("%s;", queryx)
+		//			log.Printf("SQL: %s\n", queryx)
+		rows, err := db.Query(queryx)
+		if err != nil {
+			fmt.Printf("SQL Error: %s\n", queryx)
+			log.Printf("PG::Query() Check LDAP tables error: %v\n", err)
+			return
+		}
+		xGetCkl = 0
+		for rows.Next() {
+			rows.Scan(&xGetDN[xGetCkl])
+			//				fmt.Println(xGetDN[xGetCkl], dn)
+			if strings.Contains(strings.ToLower(xGetDN[xGetCkl]), strings.ToLower(dn)) {
+				log.Printf("%s <-- SQL Found: %s\n", remIPClient, xGetDN[xGetCkl])
+				xGetCkl++
+				if xGetCkl > userLimit {
+					xMessage = fmt.Sprintf("Количество персон по вашему запросу привысило %d человек. Пожалуйста, задайте критерии более конкретно!", userLimit)
+					break
 				}
 			}
-			xSearchPplMode = 1
-		} else {
-			//		ldap_Search=fmt.Sprintf("(&(objectClass=*)(cn=*%s*))",unidecode.Unidecode(get_cn))
-			//		ldap_Search=fmt.Sprintf("(&(objectClass=*)((displayName=*%s*)))",get_cn)
-			ldap_Search = fmt.Sprintf("(&(objectClass=inetOrgPerson)(displayName=*%s*))", get_cn)
-			//		ldap_Search=fmt.Sprintf("(|(displayName=*%s*))", get_cn)
-			//		ldap_Search=fmt.Sprintf("(%s)", search_str)
-			//		ldap_Search=fmt.Sprintf("(displayName=*%s*)", get_cn)
-			//		ldap_Search=fmt.Sprintf("(cn=%s)",get_cn)
-			//		ldap_Search=fmt.Sprintf("(&(objectClass=)(cn=*%s*))",unidecode.Unidecode(get_cn))
 		}
+		xSearchPplMode = 1
 		ldapSearchMode = 2
 	}
 
