@@ -214,7 +214,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ldap_Search = rconf.LDAP_URL[ldap_count][4]
 	} else {
 		if strings.ToLower(rconf.WLB_SQL_PreFetch) == "yes" {
-			log.Printf("%s ++> SQL Search: %s\n", remIPClient, get_cn)
+			log.Printf("%s ++> SQL Search: %s/%s/%s\n", remIPClient, get_cn, get_fn, get_ln)
 			/*			db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
 						//			db, err := sql.Open("postgres", rconf.PG_DSN)
 						if err != nil {
@@ -434,6 +434,7 @@ func sqliteUpdate() {
 		err        error
 
 		query_create = string(`
+PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS ldap (
 	FullName varchar(255),
 	FirstName varchar(255),
@@ -508,8 +509,8 @@ insert into ldap (FullName, LastName, FirstName, DN)
 		}
 	}
 
-	//arch := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-	search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
 	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(displayName=*смирнов*)", ldap_Attr, nil)
 
 	//	log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
