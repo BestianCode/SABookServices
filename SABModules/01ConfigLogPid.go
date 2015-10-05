@@ -49,6 +49,7 @@ type Config_STR struct {
 	WLB_SQL_PreFetch string
 	WLB_MailBT       string
 	WLB_SQLite_DB    string
+	WLB_HTML_Title   string
 }
 
 var Flog_File *os.File

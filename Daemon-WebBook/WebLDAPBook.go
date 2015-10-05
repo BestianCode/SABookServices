@@ -464,7 +464,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": "PhoneBook"})
+	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title})
 
 	t, err = template.ParseFiles("templates/search.html")
 	if err != nil {
