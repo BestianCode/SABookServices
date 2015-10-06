@@ -41,7 +41,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.05.00.00")
+	pVer      = string("1 alpha 2015.10.07.00.00")
 	userLimit = 20
 )
 
@@ -53,6 +53,7 @@ var (
 	rconf           SABModules.Config_STR
 	ldap_count      = int(0)
 	db              *sql.DB
+	sleepTime       = 60
 )
 
 func sqliteInit() {
@@ -62,12 +63,6 @@ func sqliteInit() {
 		query_create = string(`
 PRAGMA journal_mode=WAL;
 CREATE TABLE IF NOT EXISTS ldap (
-	FullName varchar(255),
-	FirstName varchar(255),
-	LastName varchar(255),
-	DN varchar(1024) PRIMARY KEY
-);
-CREATE temp TABLE IF NOT EXISTS ldap_cache (
 	FullName varchar(255),
 	FirstName varchar(255),
 	LastName varchar(255),
@@ -104,9 +99,16 @@ func sqliteUpdate() {
 		err        error
 		l          *ldap.Conn
 
+		query_create = string(`
+CREATE temp TABLE IF NOT EXISTS ldap_cache (
+	FullName varchar(255),
+	FirstName varchar(255),
+	LastName varchar(255),
+	DN varchar(1024) PRIMARY KEY
+);
+		`)
 		query_clean = string(`
-DELETE FROM ldap_cache;
-vacuum;
+delete from ldap_cache;
 		`)
 		query_update = string(`
 delete from ldap where DN not in (select DN from ldap_cache);
@@ -115,24 +117,30 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 		`)
 	)
 
+	sleepTime = rconf.Sleep_Time
+
 	ldap_Attr := make([]string, 4)
 	userdb := make(map[string]string, 4)
 
 	log.Printf("SQLite Update ***** Starting...\n")
 
-	_, err = db.Exec(query_clean)
+	_, err = db.Exec(query_create)
 	if err != nil {
-		log.Fatalf("SQLiteUPD::Exec() error: %v\n", err)
+		log.Printf("SQLiteUPD::Exec() error: %v\n", err)
+		sleepTime = 60
+		return
 	}
 
 	if initLDAPConnector() == "error" {
 		log.Printf("SQLite Update ***** Error connecting to LDAP !!!")
+		sleepTime = 60
 		return
 	}
 
 	l, err = ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
 	if err != nil {
 		log.Printf("SQLiteUPD->LDAP::Initialize() error: %v\n", err)
+		sleepTime = 60
 		return
 	}
 
@@ -142,6 +150,7 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 	err = l.Bind(rconf.LDAP_URL[ldap_count][1], rconf.LDAP_URL[ldap_count][2])
 	if err != nil {
 		log.Printf("SQLiteUPD->LDAP::Bind() error: %v\n", err)
+		sleepTime = 60
 		return
 	}
 
@@ -152,14 +161,15 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 		}
 	}
 
-	//search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-	search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
 
 	//log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
 
 	sr, err := l.Search(search)
 	if err != nil {
 		log.Printf("SQLiteUPD->LDAP::Search() error: %v\n", err)
+		sleepTime = 60
 		return
 	}
 
@@ -177,13 +187,15 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 			}
 			stmt, err := db.Prepare("INSERT INTO ldap_cache (FullName, LastName, FirstName, DN) values (?,?,?,?)")
 			if err != nil {
-				log.Fatalf("SQLiteUPD::Prepare() error: %v\n", err)
+				log.Printf("SQLiteUPD::Prepare() error: %v\n", err)
+				sleepTime = 60
+				return
 			}
 			_, err = stmt.Exec(userdb["FullName"], userdb["LastName"], userdb["FirstName"], userdb["DN"])
 			//if err != nil {
 			//	log.Printf("SQLite::Exec() error: %v\n", err)
 			//}
-			if ckl2 > 0 && ckl2 == int(ckl2/50)*50 {
+			if ckl2 > 0 && ckl2 == int(ckl2/100)*100 {
 				log.Printf("SQLite Update ***** %7d elements passed...\n", ckl2)
 			}
 			ckl2++
@@ -193,16 +205,19 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 
 	_, err = db.Exec(query_update)
 	if err != nil {
-		log.Fatalf("SQLiteUPD::Query() error: %v\n", err)
+		log.Printf("SQLiteUPD::Query() error: %v\n", err)
+		sleepTime = 60
+		return
 	}
 
 	_, err = db.Exec(query_clean)
 	if err != nil {
-		log.Fatalf("SQLite::Query() error: %v\n", err)
+		log.Printf("SQLite::Query() error: %v\n", err)
+		sleepTime = 60
+		return
 	}
 
 	log.Printf("SQLite Update ***** Completed!\n")
-	log.Printf("SQLite Update ***** Sleep for %d sec...", rconf.Sleep_Time)
 }
 
 func initLDAPConnector() string {
@@ -342,7 +357,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	get_cn := r.FormValue("cn")
 	get_fn := r.FormValue("FirstName")
 	get_ln := r.FormValue("LastName")
-	remIPClient := strings.Split(r.RemoteAddr, ":")[0]
+	remIPClient := fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], r.Header.Get("X-FORWARDED-FOR"))
 	//	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
 	if get_dn == "" {
@@ -378,17 +393,21 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		//			queryx := fmt.Sprintf("select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid and lower(y.fullname) like lower('%%%s%%');", get_cn)
 		//			queryx := "select x.dn from ldap_entries as x, ldapx_persons as y where y.uid=x.uid"
 		queryx := "select DN from ldap where 1=1"
-		if len(get_cn) > 1 {
+		if len(get_cn) > 2 {
 			queryx = fmt.Sprintf("%s and lower(FullName) like lower('%%%s%%')", queryx, strings.ToLower(get_cn))
 		}
-		if len(get_ln) > 1 {
+		if len(get_ln) > 2 {
 			queryx = fmt.Sprintf("%s and lower(LastName) like lower('%s%%')", queryx, strings.ToLower(get_ln))
 		}
-		if len(get_fn) > 1 {
+		if len(get_fn) > 2 {
 			queryx = fmt.Sprintf("%s and lower(FirstName) like lower('%s%%')", queryx, strings.ToLower(get_fn))
 		}
-		queryx = fmt.Sprintf("%s;", queryx)
-		//			log.Printf("SQL: %s\n", queryx)
+		if len(get_cn) <= 2 && len(get_ln) <= 2 && len(get_fn) <= 2 {
+			queryx = fmt.Sprintf("%s and 2=3;", queryx)
+		} else {
+			queryx = fmt.Sprintf("%s;", queryx)
+		}
+		//		log.Printf("Search QUERY: %s\n", queryx)
 		rows, err := db.Query(queryx)
 		if err != nil {
 			fmt.Printf("SQL Error: %s\n", queryx)
@@ -398,7 +417,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		xGetCkl = 0
 		for rows.Next() {
 			rows.Scan(&xGetDN[xGetCkl])
-			//				fmt.Println(xGetDN[xGetCkl], dn)
+			//fmt.Println("XXX:", xGetDN[xGetCkl], dn)
 			if strings.Contains(strings.ToLower(xGetDN[xGetCkl]), strings.ToLower(dn)) {
 				log.Printf("%s <-- SQL Found: %s\n", remIPClient, xGetDN[xGetCkl])
 				xGetCkl++
@@ -621,6 +640,7 @@ func main() {
 			}
 		}*/
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./css/"))))
+	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images/"))))
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/GoOrg", indexHandler)
 	//	fmt.Printf("1 %v\n", rconf)
@@ -650,7 +670,9 @@ func main() {
 			SABModules.Log_ON(&rconf)
 			sqliteUpdate()
 			SABModules.Log_OFF()
-			time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
+			log.Printf("SQLite Update ***** Sleep for %d sec...", sleepTime)
+			time.Sleep(time.Duration(sleepTime) * time.Second)
+			sleepTime = rconf.Sleep_Time
 		}
 	}()
 

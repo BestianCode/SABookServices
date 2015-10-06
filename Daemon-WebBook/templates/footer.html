@@ -1,8 +1,18 @@
 {{ define "footer" }}
-		<tr><td><hr noshade size=1 align=left width=50%></td></tr>
-		<tr><td class="Footer_Version">{{.WebBookVersion}}</td></tr>
-		<tr><td class="text_bugreport"><a href="mailto:{{.xMailBT}}" style="color: #880000">сообщить об ошибке</a></td></tr>
+<!--		<tr><td><hr noshade size=1 align=left width=50%></td></tr> -->
+		<tr><td>&nbsp;</td></tr>
+		<tr><td>
+		   <table bgcolor="#EEEEEE" width="100%">
+			<tr>
+				<td width="50%" class="Footer_Version">{{.WebBookVersion}}</td>
+				<td class="Footer_Bugreport"><a href="mailto:{{.xMailBT}}" style="color: #555555">сообщить об ошибке</a></td>
+			</tr>
+		   </table>
+		 </td></tr>
 		</table>
+	   </td><td width=5%>&nbsp;</td></tr>
+	  <tr><td width=5%>&nbsp;</td><td>&nbsp;</td><td width=5%>&nbsp;</td></tr>
+	 </table>
 	</body>
 </html>
 {{ end }}

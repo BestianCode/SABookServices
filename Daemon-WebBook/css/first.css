@@ -1,3 +1,39 @@
+html {
+  font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+  -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select,
+textarea {
+  margin: 0;
+  font: inherit;
+  color: #553333;
+}
+a {
+  color: #428bca;
+  text-decoration: none;
+}
+a:hover,
+a:focus {
+  text-decoration: underline;
+  outline: thin dotted;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
+a:visited {
+  color: #773b6a;
+}
+td.Drive_Buttons {
+    white-space: nowrap;
+    padding: 5px;
+    border: 2;
+    background-color: #eeeeee;
+}
 td.InsteadOfSearch {
     font-size: 14px;
     font-weight: bold;
@@ -48,13 +84,6 @@ td.UserInfo_mailto {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
 }
-td.Footer_Version {
-    font-size: 10px;
-    font-weight: normal;
-    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
-    text-align: left;
-    color: #555555;
-}
 td.text_comment {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     font-size: 12px;
@@ -69,42 +98,19 @@ td.text_warning {
     white-space: wrap;
     color: #FF0000;
 }
-td.text_bugreport {
-    font-size: 8px;
+td.Footer_Version {
+    font-size: 10px;
     font-weight: bold;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
-    color: #880000;
+    color: #555555;
+    background-color: #eeeeee;
 }
-button,
-input,
-optgroup,
-select,
-textarea {
-  margin: 0;
-  font: inherit;
-  color: inherit;
-}
-button {
-  overflow: visible;
-}
-button,
-select {
-  text-transform: none;
-}
-button,
-html input[type="button"],
-input[type="reset"],
-input[type="submit"] {
-  -webkit-appearance: button;
-  cursor: pointer;
-}
-button[disabled],
-html input[disabled] {
-  cursor: default;
-}
-button::-moz-focus-inner,
-input::-moz-focus-inner {
-  padding: 0;
-  border: 0;
+td.Footer_Bugreport {
+    font-size: 10px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: right;
+    color: #555555;
+    background-color: #eeeeee;
 }
