@@ -41,7 +41,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.07.00.00")
+	pVer      = string("1 alpha 2015.10.07.23.00")
 	userLimit = 20
 )
 
@@ -161,8 +161,8 @@ select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select
 		}
 	}
 
-	search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-	//search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	//search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
+	search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
 
 	//log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
 
@@ -357,7 +357,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	get_cn := r.FormValue("cn")
 	get_fn := r.FormValue("FirstName")
 	get_ln := r.FormValue("LastName")
-	remIPClient := fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], r.Header.Get("X-FORWARDED-FOR"))
+	remIPClient := fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], strings.Trim(strings.Trim(strings.Replace(r.Header.Get("X-FORWARDED-FOR"), "127.0.0.1", "", -1), " "), ","))
 	//	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
 	if get_dn == "" {
