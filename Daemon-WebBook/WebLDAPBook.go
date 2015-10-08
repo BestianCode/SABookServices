@@ -41,7 +41,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.07.23.00")
+	pVer      = string("1 alpha 2015.10.08.21.00")
 	userLimit = 20
 )
 
@@ -357,6 +357,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	get_cn := r.FormValue("cn")
 	get_fn := r.FormValue("FirstName")
 	get_ln := r.FormValue("LastName")
+	searchMode := r.FormValue("SearchMode")
+
 	remIPClient := fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], strings.Trim(strings.Trim(strings.Replace(r.Header.Get("X-FORWARDED-FOR"), "127.0.0.1", "", -1), " "), ","))
 	//	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
@@ -418,7 +420,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		for rows.Next() {
 			rows.Scan(&xGetDN[xGetCkl])
 			//fmt.Println("XXX:", xGetDN[xGetCkl], dn)
-			if strings.Contains(strings.ToLower(xGetDN[xGetCkl]), strings.ToLower(dn)) {
+			if strings.Contains(strings.ToLower(xGetDN[xGetCkl]), strings.ToLower(dn)) || searchMode == "Full" {
 				log.Printf("%s <-- SQL Found: %s\n", remIPClient, xGetDN[xGetCkl])
 				xGetCkl++
 				if xGetCkl > userLimit {

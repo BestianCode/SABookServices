@@ -54,7 +54,21 @@
 								<td>&nbsp;</td>
 								<td class="text_comment"><a>Используйте символ <b><font size=+1>*</font></b> вместо недостающей части имени или фамилии<br>Например <u>Богоявлен<b><font size=+1>*</font></b></u> или <u>Бугров Д<b><font size=+1>*</font></b></u></a>
 								</td> -->
-							</tr><tr>
+							</tr>
+		{{ if .GoHome }}
+							<tr>
+								<td class="UserInfo_leftHead">Искать везде:</td>
+								<td>
+									<table>
+										<tr>
+											<td><input type=checkbox name="SearchMode" VALUE="Full"></td>
+											<td class="Text_Info">поставьте галку для поиска во всех доступных организациях и подразделениях</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+		{{ end }}
+							<tr>
 								<td>&nbsp;</td>
 								<td>
 									<input name="dn" value="{{.DN}}" type=hidden>

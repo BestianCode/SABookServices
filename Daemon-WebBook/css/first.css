@@ -114,3 +114,11 @@ td.Footer_Bugreport {
     color: #555555;
     background-color: #eeeeee;
 }
+td.Text_Info {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 10px;
+    font-weight: bold;
+    text-align: left;
+    white-space: nowrap;
+    color: #428bca;
+}
