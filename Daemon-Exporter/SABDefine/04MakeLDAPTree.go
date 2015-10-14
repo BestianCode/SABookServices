@@ -1,10 +1,9 @@
 package SABDefine
 
-var	(
+var (
+	LDAP_Tables_am = int(9)
 
-	LDAP_Tables_am		=	int(8)
-
-	LDAP_Scheme_create	=	string(`
+	LDAP_Scheme_create = string(`
 
 drop table if exists ldapx_phones;
 drop table if exists ldapx_persons;
@@ -83,6 +82,7 @@ CREATE TABLE IF NOT EXISTS ldapx_persons (
     mn character varying(255),
     uid bytea,
     idparent bytea,
+    login character varying(255),
     fullname character varying(255),
     lang integer NOT NULL,
     bc character varying(255),
@@ -97,8 +97,14 @@ CREATE TABLE IF NOT EXISTS ldapx_mail (
     PRIMARY KEY (id)
 );
 
-
-
+CREATE TABLE IF NOT EXISTS ldapx_ad_login (
+    id integer NOT NULL,
+    domain character varying(255) NOT NULL,
+    dlogin character varying(255) NOT NULL,
+    login character varying(255) NOT NULL,
+    pers_id bytea NOT NULL,
+    PRIMARY KEY (id)
+);
 
 INSERT INTO ldap_attr_mappings VALUES (1, 1, 'cn', 'text(ldapx_persons.surname||'' ''||ldapx_persons.name)', NULL, 'ldapx_persons', 'ldapx_persons.lang=0', NULL, NULL, 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (2, 3, 'o', 'ldapx_institutes.name', NULL, 'ldapx_institutes', NULL, NULL, NULL, 3, 0);
@@ -113,6 +119,8 @@ INSERT INTO ldap_attr_mappings VALUES (10, 1, 'pager', 'ldapx_phones.phone', NUL
 INSERT INTO ldap_attr_mappings VALUES (11, 1, 'mail', 'ldapx_mail.mail', NULL, 'ldapx_persons,ldapx_mail', 'ldapx_mail.pers_id=ldapx_persons.uid and ldapx_persons.lang=0', NULL, NULL, 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (12, 1, 'businessCategory', 'ldapx_persons.bc', NULL, 'ldapx_persons', 'ldapx_persons.lang=0', NULL, NULL, 3, 0);
 INSERT INTO ldap_attr_mappings VALUES (13, 1, 'uid', 'ldapx_persons.uid', NULL, 'ldapx_persons', 'ldapx_persons.lang=0', NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (14, 1, 'adLogin', 'ldapx_ad_login.login', NULL, 'ldapx_persons,ldapx_ad_login', 'ldapx_ad_login.pers_id=ldapx_persons.uid and ldapx_persons.lang=0', NULL, NULL, 3, 0);
+INSERT INTO ldap_attr_mappings VALUES (15, 1, 'adDomain', 'ldapx_ad_login.domain', NULL, 'ldapx_persons,ldapx_ad_login', 'ldapx_ad_login.pers_id=ldapx_persons.uid and ldapx_persons.lang=0', NULL, NULL, 3, 0);
 
 INSERT INTO ldap_oc_mappings VALUES (1, 'inetOrgPerson', 'ldapx_persons', 'id', 'SELECT create_person()', 'DELETE FROM ldapx_persons WHERE id=?', 0);
 INSERT INTO ldap_oc_mappings VALUES (3, 'organization', 'ldapx_institutes', 'id', 'SELECT create_o()', 'DELETE FROM ldapx_institutes WHERE id=?', 0);
@@ -200,9 +208,23 @@ CREATE SEQUENCE ldapx_mail_id_seq
 ALTER SEQUENCE ldapx_mail_id_seq OWNED BY ldapx_mail.id;
 ALTER TABLE ONLY ldapx_mail ALTER COLUMN id SET DEFAULT nextval('ldapx_mail_id_seq'::regclass);
 SELECT pg_catalog.setval('ldapx_mail_id_seq', 10, true);
+
+
+
+
+CREATE SEQUENCE ldapx_ad_login_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER SEQUENCE ldapx_ad_login_id_seq OWNED BY ldapx_ad_login.id;
+ALTER TABLE ONLY ldapx_ad_login ALTER COLUMN id SET DEFAULT nextval('ldapx_ad_login_id_seq'::regclass);
+SELECT pg_catalog.setval('ldapx_ad_login_id_seq', 10, true);
+
 `)
 
-	PG_QUE_LDAP_ORGS1	=	string (`
+	PG_QUE_LDAP_ORGS1 = string(`
 delete
 	from ldapx_institutes where uid in
 		(select uid from ldapx_institutes where uid not in (select uid from XYZDBOrgsXYZ where uid is not null) and uid is not null) and
@@ -254,10 +276,9 @@ delete
 		uid is not null) and id>XYZGlbParXYZ and pass=2;
 `)
 
+	PG_QUE_LDAP_ORGS1X_GET = string("select count(uid) from XYZDBDepsXYZ where uid not in (select uid from ldap_entries where uid is not null);")
 
-	PG_QUE_LDAP_ORGS1X_GET	=	string ("select count(uid) from XYZDBDepsXYZ where uid not in (select uid from ldap_entries where uid is not null);")
-
-	PG_QUE_LDAP_ORGS1X_PUT	=	string (`
+	PG_QUE_LDAP_ORGS1X_PUT = string(`
 insert into ldap_entries (dn,oc_map_id,parent,keyval,uid,idparent,pass)
 		select format('OU=%s,%s', regexp_replace(XYZDBDepsXYZ.nametr, '[^A-Za-z0-9\ \_\-]', '', 'g'), ldap_entries.dn),
 		3, ldap_entries.id, ldapx_institutes.id, XYZDBDepsXYZ.uid, XYZDBDepsXYZ.idparent, 2
@@ -268,7 +289,7 @@ insert into ldap_entries (dn,oc_map_id,parent,keyval,uid,idparent,pass)
 				ldap_entries.uid=XYZDBDepsXYZ.idparent;
 `)
 
-	PG_QUE_LDAP_ORGS1_END	=	string (`
+	PG_QUE_LDAP_ORGS1_END = string(`
 update ldap_entries
 		set dn=subq.dn, parent=subq.parent, idparent=subq.idparent
 		from (select format('OU=%s,%s', regexp_replace(XYZDBDepsXYZ.nametr, '[^A-Za-z0-9\ \_\-]', '', 'g'), ldap_entries.dn) as dn,
@@ -280,9 +301,7 @@ update ldap_entries
 		where ldap_entries.uid=subq.uid and ldap_entries.pass=2;
 `)
 
-
-
-	PG_QUE_LDAP_PERS1	=	string (`
+	PG_QUE_LDAP_PERS1 = string(`
 delete from ldapx_persons where lang=0 and uid not in (select uid from XYZDBPersXYZ where uid is not null) and uid is not null;
 
 insert into ldapx_persons (uid,lang)
@@ -318,9 +337,9 @@ delete
 		uid is not null and id>XYZGlbParXYZ and pass=3;
 `)
 
-	PG_QUE_LDAP_PERS1X_GET	=	string ("select count(uid) from XYZDBPersXYZ where uid not in (select uid from ldap_entries where uid is not null);")
+	PG_QUE_LDAP_PERS1X_GET = string("select count(uid) from XYZDBPersXYZ where uid not in (select uid from ldap_entries where uid is not null);")
 
-	PG_QUE_LDAP_PERS1X_PUT	=	string (`
+	PG_QUE_LDAP_PERS1X_PUT = string(`
 insert into ldap_entries (dn,oc_map_id,parent,keyval,uid,idparent,pass)
 		select format('CN=%s,%s', format('%s %s %s',XYZDBPersXYZ.nlt,XYZDBPersXYZ.nft,XYZDBPersXYZ.nmt), ldap_entries.dn),
 		1, ldap_entries.id, ldapx_persons.id, XYZDBPersXYZ.uid, XYZDBPersXYZ.idparent, 3
@@ -331,7 +350,7 @@ insert into ldap_entries (dn,oc_map_id,parent,keyval,uid,idparent,pass)
 				ldap_entries.uid=XYZDBPersXYZ.idparent;
 `)
 
-	PG_QUE_LDAP_PERS1_END	=	string (`
+	PG_QUE_LDAP_PERS1_END = string(`
 update ldap_entries
 		set dn=subq.dn, parent=subq.parent, idparent=subq.idparent
 		from (select format('CN=%s,%s', format('%s %s %s',XYZDBPersXYZ.nlt,XYZDBPersXYZ.nft,XYZDBPersXYZ.nmt), ldap_entries.dn) as dn,
@@ -344,27 +363,36 @@ update ldap_entries
 		where ldap_entries.uid=subq.uid and ldap_entries.pass=3;
 `)
 
-
-	PG_QUE_LDAP_PHONES	=	string (`
+	PG_QUE_LDAP_PHONES = [][]string{{`
 delete from ldapx_phones as ph where ph.pers_id not in (select cache.uid from XYZDBPhonesXYZ as cache where cache.uid=ph.pers_id and cache.phone=ph.phone);
-
+    `, " purge old phones"},
+		{`
 insert into ldapx_phones (phone,pers_id, pass)
 	select cache.phone, cache.uid, cache.type from XYZDBPhonesXYZ as cache
-		where cache.uid not in (select pers_id from ldapx_phones as ph where ph.pers_id=cache.uid and ph.phone=cache.phone);
-
-
-
-
+ 		where cache.uid not in (select pers_id from ldapx_phones as ph where ph.pers_id=cache.uid and ph.phone=cache.phone) and
+        ((cache.type=1 and cache.tm='Y') or (cache.type<>1));
+    `, "insert new phones"},
+		{`
 delete from ldapx_mail where mail not in (select ml.mail from XYZDBMailXYZ as ml, XYZDBPersXYZ as cache, ldapx_mail as mail where mail.mail=ml.mail and mail.pers_id=cache.uid);
-
+    `, " purge old e-mail's"},
+		{`
 insert into ldapx_mail (mail,pers_id)
 	select ml.mail, cache.uid from XYZDBMailXYZ as ml, XYZDBPersXYZ as cache
 		where
 			(format('%s %s %s', cache.nlr, cache.nfr, cache.nmir)=ml.namerus or format('%s %s %s', cache.nlr, cache.nfr, cache.nmr)=ml.namerus or
 				format('%s %s', cache.nlr, cache.nfr)=ml.namerus) and
-			ml.mail not in (select ml_ch.mail from ldapx_mail as ml_ch where ml_ch.mail=ml.mail and cache.uid=ml_ch.pers_id);
-
-`)
-
+			ml.mail not in (select ml_ch.mail from ldapx_mail as ml_ch where ml_ch.mail=ml.mail);
+	`, "insert new e-mail's"},
+		{`
+delete from ldapx_ad_login where dlogin not in (select ad.dlogin from XYZDBADXYZ as ad, ldapx_ad_login as login where login.dlogin=ad.dlogin);
+    `, " purge old ad-logins"},
+		{`
+insert into ldapx_ad_login (domain,dlogin,login,pers_id)
+	select ad.domain, ad.dlogin, ad.login, cache.uid from XYZDBADXYZ as ad, XYZDBPersXYZ as cache
+		where lower(format('%s %s %s', cache.nlr, cache.nfr, cache.nmr))=lower(ad.displayname) and XYZSubParentCheckXYZ and
+			ad.dlogin not in (select dlogin from ldapx_ad_login where dlogin=ad.dlogin);
+    `, "insert new ad-logins"},
+		{`
+update XYZDBADXYZ set connected='yes' where lower(displayname) in (select lower(format('%s %s %s', nlr, nfr, nmr)) from XYZDBPersXYZ as cache, ldapx_ad_login as ad where ad.dlogin like '%@%' and XYZSubParentCheckXYZ and ad.pers_id=cache.uid);
+	`, "update connected"}}
 )
-

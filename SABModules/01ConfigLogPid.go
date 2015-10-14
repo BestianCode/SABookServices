@@ -12,37 +12,25 @@ import (
 )
 
 type Config_STR struct {
-	PG_DSN string
-
-	AST_SQLite_DB string
-	AST_CID_Group string
-	AST_Num_Start string
-
-	AST_ARI_Host string
-	AST_ARI_Port int
-	AST_ARI_User string
-	AST_ARI_Pass string
-
-	Oracle_SRV [][]string
-
-	MSSQL_DSN [][]string
-
-	LDAP_URL [][]string
-
-	ROOT_OU string
-
-	ROOT_DN [][]string
-
-	Sleep_Time   int
-	Sleep_cycles int
-
-	LOG_File string
-	PID_File string
-
-	TRANS_NAMES [][]string
-
-	BlackList_OU []string
-
+	PG_DSN           string
+	AST_SQLite_DB    string
+	AST_CID_Group    string
+	AST_Num_Start    string
+	AST_ARI_Host     string
+	AST_ARI_Port     int
+	AST_ARI_User     string
+	AST_ARI_Pass     string
+	Oracle_SRV       [][]string
+	MSSQL_DSN        [][]string
+	LDAP_URL         [][]string
+	ROOT_OU          string
+	ROOT_DN          [][]string
+	Sleep_Time       int
+	Sleep_cycles     int
+	LOG_File         string
+	PID_File         string
+	TRANS_NAMES      [][]string
+	BlackList_OU     []string
 	WLB_Listen_IP    string
 	WLB_Listen_PORT  int
 	WLB_LDAP_ATTR    [][]string
@@ -50,6 +38,10 @@ type Config_STR struct {
 	WLB_MailBT       string
 	WLB_SQLite_DB    string
 	WLB_HTML_Title   string
+	AD_LDAP          [][]string
+	AD_ScriptDir     string
+	AD_LDAP_PARENT   [][]string
+	TRANS_POS        [][]string
 }
 
 var Flog_File *os.File

@@ -5,7 +5,7 @@ import (
 	"log"
 	"strings"
 
-// PostgreSQL
+	// PostgreSQL
 	"database/sql"
 	_ "github.com/lib/pq"
 
@@ -16,23 +16,22 @@ import (
 
 func LDAP_Make(conf *SABModules.Config_STR) int {
 
-	var	(
-		GlobalParentInsert	=	string("")
+	var (
+		GlobalParentInsert = string("")
 
-		GlobalParent			string
-		GlobalParentID			int
+		GlobalParent   string
+		GlobalParentID int
 
-		ckl				int
+		ckl int
 
-		lastx			=	int(0)
-		lasty			=	int(0)
+		lastx = int(0)
+		lasty = int(0)
 
-		queryx				string
+		queryx string
 
-		ldap_table_check	=	int(1)
+		ldap_table_check = int(1)
 
-		ldap_que_check_tables	=	string ("SELECT count(tablename) FROM pg_catalog.pg_tables where tablename like 'ldap%';")
-
+		ldap_que_check_tables = string("SELECT count(tablename) FROM pg_catalog.pg_tables where tablename like 'ldap%';")
 	)
 
 	log.Printf(".")
@@ -40,13 +39,13 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	log.Printf("...")
 	log.Printf("Building LDAP Tree...")
 
-	for ckl=0;ckl<len(conf.ROOT_DN);ckl++ {
-		GlobalParentInsert=fmt.Sprintf("%sINSERT INTO ldap_entries VALUES (%d,'%s',%d,%d,%d,'%d','%d',%d); ", GlobalParentInsert, ckl+1, conf.ROOT_DN[ckl][0], 3, ckl, ckl+1, ckl+1, ckl, 0)
-		GlobalParentInsert=fmt.Sprintf("%sINSERT INTO ldapx_institutes VALUES (%d,'%s','%d','%d',%d); ", GlobalParentInsert, ckl+1, conf.ROOT_DN[ckl][1], ckl+1, ckl, 0)
+	for ckl = 0; ckl < len(conf.ROOT_DN); ckl++ {
+		GlobalParentInsert = fmt.Sprintf("%sINSERT INTO ldap_entries VALUES (%d,'%s',%d,%d,%d,'%d','%d',%d); ", GlobalParentInsert, ckl+1, conf.ROOT_DN[ckl][0], 3, ckl, ckl+1, ckl+1, ckl, 0)
+		GlobalParentInsert = fmt.Sprintf("%sINSERT INTO ldapx_institutes VALUES (%d,'%s','%d','%d',%d); ", GlobalParentInsert, ckl+1, conf.ROOT_DN[ckl][1], ckl+1, ckl, 0)
 	}
-	GlobalParentID=ckl
-	GlobalParent=conf.ROOT_DN[ckl-1][0]
-//	log.Printf("%d %s\n\n%s\n", GlobalParentID, GlobalParent, GlobalParentInsert)
+	GlobalParentID = ckl
+	GlobalParent = conf.ROOT_DN[ckl-1][0]
+	//	log.Printf("%d %s\n\n%s\n", GlobalParentID, GlobalParent, GlobalParentInsert)
 
 	db, err := sql.Open("postgres", conf.PG_DSN)
 	if err != nil {
@@ -67,9 +66,9 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	rows.Next()
 	rows.Scan(&ldap_table_check)
 
-	if ldap_table_check<SABDefine.LDAP_Tables_am {
+	if ldap_table_check < SABDefine.LDAP_Tables_am {
 		log.Printf("\t\tHmmm...  %d tables instead of %d... Rebuilding LDAP DB!", ldap_table_check, SABDefine.LDAP_Tables_am)
-		queryx=strings.Replace(SABDefine.LDAP_Scheme_create, "XYZInsertIntoXYZ", GlobalParentInsert, -1)
+		queryx = strings.Replace(SABDefine.LDAP_Scheme_create, "XYZInsertIntoXYZ", GlobalParentInsert, -1)
 		_, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() Create LDAP scheme error: %v\n", err)
@@ -77,17 +76,17 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 			return 12
 		}
 		log.Printf("\tLDAP DB Rebuilded!")
-	}else{
+	} else {
 		log.Printf("\tLDAP DB Good!")
 	}
 
 	log.Printf("\t\tUpdate LDAP orgs and deps...")
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1	, "XYZGlbParXYZ",	fmt.Sprintf("%d", GlobalParentID), -1)
-	queryx=strings.Replace(queryx				, "XYZDBOrgsXYZ",	SABDefine.PG_Table_MSSQL[0], -1)
-	queryx=strings.Replace(queryx				, "XYZDBDepsXYZ",	SABDefine.PG_Table_MSSQL[1], -1)
-	queryx=strings.Replace(queryx				, "XYZGlbDNXYZ",	GlobalParent, -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1, "XYZGlbParXYZ", fmt.Sprintf("%d", GlobalParentID), -1)
+	queryx = strings.Replace(queryx, "XYZDBOrgsXYZ", SABDefine.PG_Table_MSSQL[0], -1)
+	queryx = strings.Replace(queryx, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
+	queryx = strings.Replace(queryx, "XYZGlbDNXYZ", GlobalParent, -1)
+	//	log.Printf("%s\n", queryx)
 	_, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() ORGS1 Execute error: %v\n", err)
@@ -95,8 +94,8 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 		return 13
 	}
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_GET	, "XYZDBDepsXYZ",	SABDefine.PG_Table_MSSQL[1], -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_GET, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
+	//	log.Printf("%s\n", queryx)
 	rows, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() ORGS1X_GET error: %v\n", err)
@@ -107,12 +106,12 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	rows.Next()
 	rows.Scan(&lastx)
 
-	lasty=lastx
+	lasty = lastx
 	log.Printf("\t%6d / %6d", lastx, lasty)
 
 	for {
-		queryx=strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_PUT	, "XYZDBDepsXYZ",	SABDefine.PG_Table_MSSQL[1], -1)
-//		log.Printf("%s\n", queryx)
+		queryx = strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_PUT, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
+		//		log.Printf("%s\n", queryx)
 		_, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() ORGS1X_PUT in FOR error: %v\n", err)
@@ -120,8 +119,8 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 			return 110
 		}
 
-		queryx=strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_GET	, "XYZDBDepsXYZ",	SABDefine.PG_Table_MSSQL[1], -1)
-//		log.Printf("%s\n", queryx)
+		queryx = strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1X_GET, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
+		//		log.Printf("%s\n", queryx)
 		rows, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() ORGS1X_GET in FOR error: %v\n", err)
@@ -131,17 +130,17 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 		rows.Next()
 		rows.Scan(&lastx)
 		log.Printf("\t%6d / %6d", lastx, lasty)
-		if lastx<lasty {
-			lasty=lastx
-//			log.Printf("Good")
-		}else{
-//			log.Printf("Stop")
+		if lastx < lasty {
+			lasty = lastx
+			//			log.Printf("Good")
+		} else {
+			//			log.Printf("Stop")
 			break
 		}
 	}
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1_END	, "XYZDBDepsXYZ",	SABDefine.PG_Table_MSSQL[1], -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_ORGS1_END, "XYZDBDepsXYZ", SABDefine.PG_Table_MSSQL[1], -1)
+	//	log.Printf("%s\n", queryx)
 	rows, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() ORGS1_END error: %v\n", err)
@@ -151,9 +150,9 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 
 	log.Printf("\t\tUpdate LDAP persons...")
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PERS1	, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-	queryx=strings.Replace(queryx				, "XYZGlbParXYZ",	fmt.Sprintf("%d", GlobalParentID), -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PERS1, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+	queryx = strings.Replace(queryx, "XYZGlbParXYZ", fmt.Sprintf("%d", GlobalParentID), -1)
+	//	log.Printf("%s\n", queryx)
 	rows, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() PERS1 error: %v\n", err)
@@ -161,8 +160,8 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 		return 16
 	}
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_GET	, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_GET, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+	//	log.Printf("%s\n", queryx)
 	rows, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() PERS1X_GET error: %v\n", err)
@@ -173,12 +172,12 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	rows.Next()
 	rows.Scan(&lastx)
 
-	lasty=lastx
+	lasty = lastx
 	log.Printf("\t%6d / %6d", lastx, lasty)
 
 	for {
-		queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_PUT	, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-//		log.Printf("%s\n", queryx)
+		queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_PUT, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+		//		log.Printf("%s\n", queryx)
 		_, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() PERS1X_PUT in FOR error: %v\n", err)
@@ -186,8 +185,8 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 			return 112
 		}
 
-		queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_GET	, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-//		log.Printf("%s\n", queryx)
+		queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PERS1X_GET, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+		//		log.Printf("%s\n", queryx)
 		rows, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("PG::Query() PERS1X_GET error: %v\n", err)
@@ -197,17 +196,17 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 		rows.Next()
 		rows.Scan(&lastx)
 		log.Printf("\t%6d / %6d", lastx, lasty)
-		if lastx<lasty {
-			lasty=lastx
-//			log.Printf("Good")
-		}else{
-//			log.Printf("Stop")
+		if lastx < lasty {
+			lasty = lastx
+			//			log.Printf("Good")
+		} else {
+			//			log.Printf("Stop")
 			break
 		}
 	}
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PERS1_END	, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-//	log.Printf("%s\n", queryx)
+	queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PERS1_END, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+	//	log.Printf("%s\n", queryx)
 	rows, err = db.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() PERS1_END error: %v\n", err)
@@ -215,17 +214,33 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 		return 18
 	}
 
-	log.Printf("\t\tUpdate Phone and Mail...")
+	log.Printf("\t\tUpdate contact and credentials info...")
 
-	queryx=strings.Replace(SABDefine.PG_QUE_LDAP_PHONES	, "XYZDBPhonesXYZ",	SABDefine.PG_Table_Oracle, -1)
-	queryx=strings.Replace(queryx				, "XYZDBMailXYZ",	SABDefine.PG_Table_Domino, -1)
-	queryx=strings.Replace(queryx				, "XYZDBPersXYZ",	SABDefine.PG_Table_MSSQL[2], -1)
-//	log.Printf("%s\n", queryx)
-	rows, err = db.Query(queryx)
-	if err != nil {
-		log.Printf("PG::Query() PHONES error: %v\n", err)
-		log.Printf("%s\n", queryx)
-		return 18
+	subParentCheck := ""
+	for ckl := 0; ckl < len(conf.AD_LDAP_PARENT); ckl++ {
+		if ckl > 0 {
+			subParentCheck = fmt.Sprintf("%s or", subParentCheck)
+		}
+		subParentCheck = fmt.Sprintf("%s (ad.domain='%s' and cache.idorg='%s')", subParentCheck, conf.AD_LDAP_PARENT[ckl][0], conf.AD_LDAP_PARENT[ckl][1])
+	}
+	subParentCheck = fmt.Sprintf("(%s)", subParentCheck)
+
+	//log.Printf("%s\n", subParentCheck)
+
+	for ckl := 0; ckl < len(SABDefine.PG_QUE_LDAP_PHONES); ckl++ {
+		log.Printf("\tstep%2d of %5d    -  %s", ckl+1, len(SABDefine.PG_QUE_LDAP_PHONES), SABDefine.PG_QUE_LDAP_PHONES[ckl][1])
+		queryx = strings.Replace(SABDefine.PG_QUE_LDAP_PHONES[ckl][0], "XYZDBPhonesXYZ", SABDefine.PG_Table_Oracle, -1)
+		queryx = strings.Replace(queryx, "XYZDBMailXYZ", SABDefine.PG_Table_Domino, -1)
+		queryx = strings.Replace(queryx, "XYZDBADXYZ", SABDefine.PG_Table_AD, -1)
+		queryx = strings.Replace(queryx, "XYZDBPersXYZ", SABDefine.PG_Table_MSSQL[2], -1)
+		queryx = strings.Replace(queryx, "XYZSubParentCheckXYZ", subParentCheck, -1)
+		//log.Printf("%s\n", queryx)
+		rows, err = db.Query(queryx)
+		if err != nil {
+			log.Printf("PG::Query() PHONES error: %v\n", err)
+			log.Printf("%s\n", queryx)
+			return 18
+		}
 	}
 
 	log.Printf("\tComplete")
@@ -233,4 +248,3 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	return 94
 
 }
-

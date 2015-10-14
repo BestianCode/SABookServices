@@ -1,76 +1,110 @@
 package SABModules
 
 import (
-	"strings"
-	"regexp"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 func TransMutation(x string, conf *Config_STR) string {
 
-	var	(
-		ckl	=	int(0)
-		num	=	int(0)
+	var (
+		ckl = int(0)
+		num = int(0)
 	)
+
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
+	}
 
 	num = len(conf.TRANS_NAMES)
 
-	for ckl=0; ckl<num; ckl++{
-		x=strings.Replace(x, conf.TRANS_NAMES[ckl][0], conf.TRANS_NAMES[ckl][1], -1)
-		x=strings.Replace(x, strings.ToLower(conf.TRANS_NAMES[ckl][0]), strings.ToLower(conf.TRANS_NAMES[ckl][1]), -1)
+	for ckl = 0; ckl < num; ckl++ {
+		x = strings.Replace(x, conf.TRANS_NAMES[ckl][0], conf.TRANS_NAMES[ckl][1], -1)
+		x = strings.Replace(x, strings.ToLower(conf.TRANS_NAMES[ckl][0]), strings.ToLower(conf.TRANS_NAMES[ckl][1]), -1)
 	}
 
-	for strings.Contains(x, "  "){
-		x=strings.Replace(x, "  ", " ", -1)
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
 	}
 
-	x=strings.Trim(x, " ")
+	x = strings.Trim(x, " ")
 
-	return	x
+	return x
+
+}
+
+func PosMutation(x string, conf *Config_STR) string {
+
+	var (
+		ckl = int(0)
+		num = int(0)
+	)
+
+	x = strings.Replace(x, "\"", "", -1)
+	x = strings.Replace(x, "'", "", -1)
+
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
+	}
+
+	num = len(conf.TRANS_POS)
+
+	for ckl = 0; ckl < num; ckl++ {
+		x = strings.Replace(x, conf.TRANS_POS[ckl][0], conf.TRANS_POS[ckl][1], -1)
+		x = strings.Replace(x, strings.ToLower(conf.TRANS_POS[ckl][0]), strings.ToLower(conf.TRANS_POS[ckl][1]), -1)
+	}
+
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
+	}
+
+	x = strings.Trim(x, " ")
+
+	return x
 
 }
 
 func PeopleMutation(x string, mode string) []string {
 
-	var	(
+	var (
 
-//		y	=	[]string{"","","","",""}
-		y	[]string
+		//		y	=	[]string{"","","","",""}
+		y []string
 
-		ckl	=	int(0)
-		num	=	int(0)
-
+		ckl = int(0)
+		num = int(0)
 	)
 
-	for strings.Contains(x, "  "){
-		x=strings.Replace(x, "  ", " ", -1)
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
 	}
 
 	y = strings.Split(strings.Trim(strings.ToLower(x), " "), " ")
 
-	num=len(y)
+	num = len(y)
 
-	for ckl=0; ckl<num; ckl++{
+	for ckl = 0; ckl < num; ckl++ {
 		if mode == "RUS" {
-			y[ckl]=fmt.Sprintf("%s%s",strings.ToUpper(y[ckl][:2]), y[ckl][2:])
-		}else{
-			y[ckl]=fmt.Sprintf("%s%s",strings.ToUpper(y[ckl][:1]), y[ckl][1:])
+			y[ckl] = fmt.Sprintf("%s%s", strings.ToUpper(y[ckl][:2]), y[ckl][2:])
+		} else {
+			y[ckl] = fmt.Sprintf("%s%s", strings.ToUpper(y[ckl][:1]), y[ckl][1:])
 		}
 	}
 
-	return	y
+	return y
 
 }
 
 func TextMutation(x string) string {
 
-	for strings.Contains(x, "  "){
-		x=strings.Replace(x, "  ", " ", -1)
+	for strings.Contains(x, "  ") {
+		x = strings.Replace(x, "  ", " ", -1)
 	}
 
-	x=strings.Trim(x, " ")
+	x = strings.Trim(x, " ")
 
-	return	x
+	return x
 
 }
 
@@ -79,3 +113,6 @@ func PhoneMutation(x string) string {
 	return cleanNumberRegExp.ReplaceAllLiteralString(x, "")
 }
 
+func NameMutation(x string) string {
+	return TextMutation(strings.ToLower(x))
+}

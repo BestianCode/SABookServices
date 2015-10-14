@@ -424,7 +424,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 				log.Printf("%s <-- SQL Found: %s\n", remIPClient, xGetDN[xGetCkl])
 				xGetCkl++
 				if xGetCkl > userLimit {
-					xMessage = fmt.Sprintf("Количество персон по вашему запросу привысило %d человек. Пожалуйста, задайте критерии более конкретно!", userLimit)
+					xMessage = fmt.Sprintf("Количество персон по вашему запросу превысило %d! Пожалуйста, задайте критерии более конкретно!", userLimit)
 					break
 				}
 			}
