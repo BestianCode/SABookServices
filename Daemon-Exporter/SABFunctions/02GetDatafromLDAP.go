@@ -6,44 +6,42 @@ import (
 	"strings"
 	"time"
 
-
-// PostgreSQL
+	// PostgreSQL
 	"database/sql"
 	_ "github.com/lib/pq"
 
-//LDAP
+	//LDAP
 	"github.com/go-ldap/ldap"
 
-// Translit
+	// Translit
 	"github.com/BestianRU/gounidecode/unidecode"
 
-	"github.com/BestianRU/SABookServices/SABModules"
 	"github.com/BestianRU/SABookServices/Daemon-Exporter/SABDefine"
+	"github.com/BestianRU/SABookServices/SABModules"
 )
 
 func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 
 	var (
+		ckl_servers int
+		num_servers int
 
-		ckl_servers		int
-		num_servers		int
+		fName []string
+		fCN   []string
+		fOUa  []string
+		fOU   string
+		fMail string
 
-		fName			[]string
-		fCN			[]string
-		fOUa			[]string
-		fOU			string
-		fMail			string
+		pfName string
+		pfCN   string
+		pfMail string
 
-		pfName			string
-		pfCN			string
-		pfMail			string
+		ckl   = int(0)
+		state = int(0)
 
-		ckl		=	int	(0)
-		state		=	int	(0)
+		queryx string
 
-		queryx			string
-
-		pg_Domino_Create=	string(`
+		pg_Domino_Create = string(`
 						CREATE TABLE IF NOT EXISTS XYZWorkTableZYX
 							(server character varying(255),
 							namerus character varying(255), trnamerus character varying(255), namelat character varying(255),
@@ -51,14 +49,13 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 								primary key (mail));
 						`)
 
-		pg_Query_Create_Status	=	string(`
+		pg_Query_Create_Status = string(`
 							CREATE TABLE IF NOT EXISTS XYZWorkTableZYX
 								(server character varying(255), status character varying(255),
 									primary key (server));
 						`)
 
-		return_result		=	int(0)
-
+		return_result = int(0)
 	)
 
 	log.Printf("LDAP Export to PG...")
@@ -88,8 +85,7 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 		return 12
 	}
 
-
-	for ckl_servers=0; ckl_servers<num_servers; ckl_servers++{
+	for ckl_servers = 0; ckl_servers < num_servers; ckl_servers++ {
 
 		log.Printf("\t\tServer %2d of %2d / Pass  1 of  1 / Server name: %s\n", ckl_servers+1, num_servers, conf.LDAP_URL[ckl_servers][0])
 
@@ -100,7 +96,7 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 		}
 
 		defer l.Close()
-//		l.Debug = true
+		//		l.Debug = true
 
 		err = l.Bind(conf.LDAP_URL[ckl_servers][1], conf.LDAP_URL[ckl_servers][2])
 		if err != nil {
@@ -118,11 +114,11 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 
 		log.Printf("\t\t\t%s // %d\n", search.Filter, len(sr.Entries))
 
-		if len(sr.Entries)>10 {
-			timenow:=time.Now().Format("2006.01.02 15:04:05")
+		if len(sr.Entries) > 10 {
+			timenow := time.Now().Format("2006.01.02 15:04:05")
 
 			queryx = fmt.Sprintf("INSERT INTO %s (server, status) select '%s', '%s' where not exists (select server from %s where server='%s'); update %s set status='%s' where server='%s'; ", SABDefine.PG_Table_Domino_Status, conf.LDAP_URL[ckl_servers][0], timenow, SABDefine.PG_Table_Domino_Status, conf.LDAP_URL[ckl_servers][0], SABDefine.PG_Table_Domino_Status, timenow, conf.LDAP_URL[ckl_servers][0])
-//			log.Printf("%s\n", queryx)
+			//			log.Printf("%s\n", queryx)
 			_, err = db.Query(queryx)
 			if err != nil {
 				log.Printf("%s\n", queryx)
@@ -138,23 +134,22 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 
 		}
 
-		ckl=0
+		ckl = 0
 
 		for _, entry := range sr.Entries {
 
-			if ckl<1 {
+			if ckl < 1 {
 				queryx = ""
 			}
 
-
 			for _, attr := range entry.Attributes {
 				if attr.Name == "altfullname" {
-					x  := strings.Join(attr.Values, ",")
+					x := strings.Join(attr.Values, ",")
 					fOUa = strings.Split(x, ",")
 					fName = strings.Split(fOUa[0], "=")
 				}
 				if attr.Name == "cn" {
-					x  := strings.Join(attr.Values, ",")
+					x := strings.Join(attr.Values, ",")
 					fCN = strings.Split(x, ",")
 				}
 				if attr.Name == "mail" {
@@ -162,44 +157,44 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 				}
 			}
 
-			if len(fName)>0 && len(fCN)>0 {
+			if len(fName) > 0 && len(fCN) > 0 {
 
-				return_result=94
+				return_result = 94
 
-				if ckl>0 && state == 1{
+				if ckl > 0 && state == 1 {
 					queryx = fmt.Sprintf("%s , ", queryx)
 				}
-				fOU=""
-				for ckl1:=int(len(fOUa)-2);ckl1>0;ckl1-- {
-					fOU=fmt.Sprintf("%s/%s", fOU, fOUa[ckl1])
+				fOU = ""
+				for ckl1 := int(len(fOUa) - 2); ckl1 > 0; ckl1-- {
+					fOU = fmt.Sprintf("%s/%s", fOU, fOUa[ckl1])
 				}
-				fOU=strings.Trim(strings.Trim(strings.Replace(strings.Replace(fOU, "OU=", "", -1), "O=", "", -1), "/"), " ")
+				fOU = strings.Trim(strings.Trim(strings.Replace(strings.Replace(fOU, "OU=", "", -1), "O=", "", -1), "/"), " ")
 				if fOU == "" {
-					fOU=conf.ROOT_OU
+					fOU = conf.ROOT_OU
 				}
-				pfName=SABModules.TextMutation(strings.Replace(fName[int(len(fName)-1)], "'", "", -1))
-				pfCN=SABModules.TextMutation(strings.Replace(fCN[0], "'", "", -1))
-				pfMail=strings.Replace(strings.ToLower(fMail), " ", "", -1)
+				pfName = SABModules.TextMutation(strings.Replace(fName[int(len(fName)-1)], "'", "", -1))
+				pfCN = SABModules.TextMutation(strings.Replace(fCN[0], "'", "", -1))
+				pfMail = strings.Replace(strings.ToLower(fMail), " ", "", -1)
 				queryx = fmt.Sprintf("%sINSERT INTO %s (server, namerus, trnamerus,  namelat, ou, mail) select '%s','%s','%s','%s','%s','%s' where not exists (select mail from %s where mail='%s'); ", queryx, SABDefine.PG_Table_Domino, conf.LDAP_URL[ckl_servers][0], pfName, unidecode.Unidecode(pfName), pfCN, fOU, pfMail, SABDefine.PG_Table_Domino, pfMail)
-//				log.Printf("%s", queryx)
-//				state = 1
+				//				log.Printf("%s", queryx)
+				//				state = 1
 			}
 
-			if ckl>=pg_minsert-1 {
-//				log.Printf("%s\n\n", queryx)
+			if ckl >= pg_minsert-1 {
+				//				log.Printf("%s\n\n", queryx)
 				_, err = db.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)
 					log.Printf("PG::Query() insert error: %v /// %s\n", err, queryx)
 				}
-				queryx=""
-				ckl=0
-//				state=0
-			}else{
+				queryx = ""
+				ckl = 0
+				//				state=0
+			} else {
 				ckl++
 			}
 		}
-//		log.Printf("%s\n\n", queryx)
+		//		log.Printf("%s\n\n", queryx)
 		_, err = db.Query(queryx)
 		if err != nil {
 			log.Printf("%s\n", queryx)
@@ -213,4 +208,3 @@ func LDAP_to_PG(conf *SABModules.Config_STR, pg_minsert int) int {
 	return return_result
 
 }
-
