@@ -1,25 +1,17 @@
 {{ define "search" }}
-			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
+			<!--<tr><td><hr noshade size=1 align=left width=50%></td></tr>-->
 			<tr>
 				<td>
-		{{ if .xMessage }}
-					<table>
-						<tr>
-							<td class="text_warning">{{.xMessage}}</td>
-						</tr>
-						<tr><td><hr noshade size=1 align=left width=10%></td></tr>
-					</table>
-		{{ end }}
-					<table>
+					<table bgcolor="{{.LineColor}}" width="100%">
 						<tr>
 							<form>
-								<td>
+								<td width="1%">
 									<input Type="button" value="<- назад" onClick="history.go(-1);return true;">
 								</td>
 							</form>
 		{{ if .PrevDN }}
 							<form name="GoToBack" action="/GoOrg" method="get">
-								<td>
+								<td width="1%">
 									<input name="dn" value="{{.PrevDN}}" type=hidden>
 									<input name="GoToBack" value="^ вверх ^" type=submit>
 
@@ -28,15 +20,18 @@
 		{{ end }}
 		{{ if .GoHome }}
 							<form name="GoToStart" action="/GoOrg" method="get">
-								<td>
+								<td width="1%">
 									<input name="GoToStart" value="на главную" type=submit>
 								</td>
 							</form>
 		{{ end }}
+								<td width="100%">
+									<td class="Auth"><a href="/login" style="color: #555555">войти</a></td>
+								</td>
 						</tr>
 					</table>
 				</td></tr>
-			<tr><td><hr noshade size=1 align=left width=50%></td></tr>
+			<!--<tr><td><hr noshade size=1 align=left width=50%></td></tr>-->
 				<tr><td>
 					<table>
 						<tr>
@@ -84,6 +79,18 @@
 							
 						</tr>
 					</table>
+		{{ if .xMessage }}
+				</td>
+			</tr>
+			<tr>
+				<td>
+					<table>
+						<tr>
+							<td class="text_warning">{{.xMessage}}</td>
+						</tr>
+						<!--<tr><td><hr noshade size=1 align=left width=10%></td></tr>-->
+					</table>
+		{{ end }}
 				</td>
 			</tr>
 <!--			<tr><td><hr noshade size=1 align=left width=50%></td></tr> -->

@@ -318,6 +318,53 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 	}
 }
 
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	username := r.FormValue("username")
+	password := r.FormValue("password")
+
+	if len(username) < 5 || len(password) < 5 {
+		t, err := template.ParseFiles("templates/header.html")
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			log.Println(err.Error())
+			return
+		}
+
+		t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": "#FF0000", "BGColor": "#FFEEEE"})
+
+		t, err = template.ParseFiles("templates/search.html")
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			log.Println(err.Error())
+			return
+		}
+
+		t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": "Yes", "LineColor": "#FFDDDD"})
+
+		t, err = template.ParseFiles("templates/login.html")
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			log.Println(err.Error())
+			return
+		}
+
+		t.ExecuteTemplate(w, "login", nil)
+
+		t, err = template.ParseFiles("templates/footer.html")
+		if err != nil {
+			fmt.Fprintf(w, err.Error())
+			log.Println(err.Error())
+			return
+		}
+
+		t.ExecuteTemplate(w, "footer", template.FuncMap{"WebBookVersion": pVersion, "xMailBT": rconf.WLB_MailBT, "LineColor": "#FFDDDD"})
+
+	} else {
+		fmt.Fprintf(w, "%s / %s\n", username, password)
+	}
+
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		xSearchPplMode = int(0)
@@ -485,7 +532,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title})
+	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": "#FFFFFF", "BGColor": "#FFFFFF"})
 
 	t, err = template.ParseFiles("templates/search.html")
 	if err != nil {
@@ -494,7 +541,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage})
+	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage, "LineColor": "#EEEEEE"})
 
 	t, err = template.ParseFiles("templates/index.html")
 	if err != nil {
@@ -584,7 +631,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "footer", template.FuncMap{"WebBookVersion": pVersion, "xMailBT": rconf.WLB_MailBT})
+	t.ExecuteTemplate(w, "footer", template.FuncMap{"WebBookVersion": pVersion, "xMailBT": rconf.WLB_MailBT, "LineColor": "#EEEEEE"})
 
 	SABModules.Log_OFF()
 }
@@ -644,6 +691,7 @@ func main() {
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./css/"))))
 	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images/"))))
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/GoOrg", indexHandler)
 	//	fmt.Printf("1 %v\n", rconf)
 	//	fmt.Printf("2 %s / %s\n", rconf.WLB_Listen_IP, fmt.Sprintf("%s",rconf.WLB_Listen_PORT))

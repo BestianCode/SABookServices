@@ -92,27 +92,25 @@ td.text_comment {
 }
 td.text_warning {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
-    text-align: left;
+    text-align: center;
     white-space: wrap;
     color: #FF0000;
 }
 td.Footer_Version {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: bold;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
     color: #555555;
-    background-color: #eeeeee;
 }
 td.Footer_Bugreport {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: bold;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: right;
-    color: #555555;
-    background-color: #eeeeee;
+    color: #0000FF;
 }
 td.Text_Info {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
@@ -121,4 +119,31 @@ td.Text_Info {
     text-align: left;
     white-space: nowrap;
     color: #428bca;
+}
+td.Auth {
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: right;
+    color: #FF0000;
+}
+td.AuthPage {
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: right;
+    color: #550000;
+    white-space: nowrap;
+    padding-left: 15px;
+    border: 1;
+}
+td.AuthMess {
+    font-size: 14px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: center;
+    color: #550000;
+    white-space: nowrap;
+    padding-left: 15px;
+    border: 1;
 }

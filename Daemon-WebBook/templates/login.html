@@ -1,0 +1,37 @@
+{{ define "login" }}
+	<tr><td><table><tr><td>
+	  <form role="form" method="POST" action="/login">
+		<tr>
+			<td width="30%">&nbsp;</td>
+			<td width="40%" class="AuthMess">
+				<b>Вы уверены, что вам сюда нужно ?</b>
+			</td>
+			<td width="30%">&nbsp;</td>
+		</tr>
+		<tr>
+			<td width="30%" class="AuthPage">
+				<b>Логин:</b>
+			</td>
+			<td width="40%" align="center">
+				<input name="username" maxlength="64" size="32" value="" type="text" />
+			</td>
+			<td width="30%">&nbsp;</td>
+		</tr>
+		<tr>
+			<td width="30%" class="AuthPage">
+				<b>Пароль:</b>
+			</td>
+			<td width="40%" align="center">
+				<input name="password" maxlength="64" size="32" value="" type="password" />
+			</td>
+			<td width="30%">&nbsp;</td>
+		</tr>
+		<tr>
+			<td width="30%">&nbsp;</td>
+			<td width="40%" align="center">
+				<button type="submit">войти</button>
+			</td>
+			<td width="30%">&nbsp;</td>
+		</tr>
+	</form></td></tr></table></td></tr>
+{{ end }}
