@@ -25,9 +25,15 @@
 								</td>
 							</form>
 		{{ end }}
-								<td width="100%">
-									<td class="Auth"><a href="/login" style="color: #555555">войти</a></td>
-								</td>
+		{{ if .LUserName}}
+								<td width="100%" class="Auth"><a href="/login?go=unlogin" style="color: #555555">({{.LUserName}})выйти</a></td>
+		{{ else }}
+				{{ if .LoginShow }}
+								<td width="100%" class="Auth"><a href="/login" style="color: #555555">войти</a></td>
+				{{ else }}
+								<td>&nbsp;</td>
+				{{ end }}
+		{{ end }}
 						</tr>
 					</table>
 				</td></tr>

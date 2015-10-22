@@ -5,6 +5,51 @@ var (
 
 	LDAP_Scheme_create = string(`
 
+drop table if exists aaa_logins;
+drop table if exists aaa_dns;
+
+CREATE TABLE IF NOT EXISTS aaa_logins (
+    id integer NOT NULL,
+    login character varying(255) NOT NULL,
+    fullname character varying(255) NOT NULL,
+    password character varying(255) NOT NULL,
+    role integer NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE IF NOT EXISTS aaa_dns (
+    id integer NOT NULL,
+    userid integer NOT NULL,
+    dn character varying(255) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE SEQUENCE aaa_logins_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER SEQUENCE aaa_logins_id_seq OWNED BY aaa_logins.id;
+ALTER TABLE ONLY aaa_logins ALTER COLUMN id SET DEFAULT nextval('aaa_logins_id_seq'::regclass);
+SELECT pg_catalog.setval('aaa_logins_id_seq', 1, true);
+
+CREATE SEQUENCE aaa_dns_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+ALTER SEQUENCE aaa_dns_id_seq OWNED BY aaa_dns.id;
+ALTER TABLE ONLY aaa_dns ALTER COLUMN id SET DEFAULT nextval('aaa_dns_id_seq'::regclass);
+SELECT pg_catalog.setval('aaa_dns_id_seq', 1, true);
+
+insert into aaa_logins (login,fullname,password,role) values ('admin','Administrator',md5('admin:SABookDAV:sabook69admin'),100);
+
+
+
+
+
 drop table if exists ldapx_phones;
 drop table if exists ldapx_persons;
 drop table if exists ldapx_mail;

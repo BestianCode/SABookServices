@@ -31,6 +31,7 @@ type Config_STR struct {
 	PID_File         string
 	TRANS_NAMES      [][]string
 	BlackList_OU     []string
+	WLB_SessTimeOut  int
 	WLB_Listen_IP    string
 	WLB_Listen_PORT  int
 	WLB_LDAP_ATTR    [][]string
@@ -42,6 +43,7 @@ type Config_STR struct {
 	AD_ScriptDir     string
 	AD_LDAP_PARENT   [][]string
 	TRANS_POS        [][]string
+	SABRealm         string
 }
 
 var Flog_File *os.File

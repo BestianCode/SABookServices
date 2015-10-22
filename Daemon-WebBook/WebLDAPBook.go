@@ -15,10 +15,11 @@ import (
 	//LDAP
 	"github.com/go-ldap/ldap"
 
+	//"database/sql"
 	// PostgreSQL
-	"database/sql"
-	//	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	//_ "github.com/lib/pq"
+	// SQLite
+	//_ "github.com/mattn/go-sqlite3"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 	//	"github.com/kabukky/httpscerts"
@@ -43,6 +44,7 @@ const (
 	pName     = string("Web Address Book")
 	pVer      = string("1 alpha 2015.10.08.21.00")
 	userLimit = 20
+	COOKIE_ID = "SABookSessionID"
 )
 
 var (
@@ -52,173 +54,8 @@ var (
 	pVersion        string
 	rconf           SABModules.Config_STR
 	ldap_count      = int(0)
-	db              *sql.DB
 	sleepTime       = 60
 )
-
-func sqliteInit() {
-	var (
-		err error
-
-		query_create = string(`
-PRAGMA journal_mode=WAL;
-CREATE TABLE IF NOT EXISTS ldap (
-	FullName varchar(255),
-	FirstName varchar(255),
-	LastName varchar(255),
-	DN varchar(1024) PRIMARY KEY
-);
-		`)
-	)
-
-	db, err = sql.Open("sqlite3", rconf.WLB_SQLite_DB)
-	if err != nil {
-		log.Fatalf("SQLiteINIT::Open() error: %v\n", err)
-	}
-
-	err = db.Ping()
-	if err != nil {
-		log.Fatalf("SQLiteINIT::Ping() error: %v\n", err)
-	}
-
-	_, err = db.Begin()
-	if err != nil {
-		log.Fatalf("SQLiteINIT::Begin() error: %v\n", err)
-	}
-
-	_, err = db.Exec(query_create)
-	if err != nil {
-		log.Fatalf("SQLiteINIT::Exec() create tables error: %v\n", err)
-	}
-
-}
-
-func sqliteUpdate() {
-	var (
-		ckl1, ckl2 int
-		err        error
-		l          *ldap.Conn
-
-		query_create = string(`
-CREATE temp TABLE IF NOT EXISTS ldap_cache (
-	FullName varchar(255),
-	FirstName varchar(255),
-	LastName varchar(255),
-	DN varchar(1024) PRIMARY KEY
-);
-		`)
-		query_clean = string(`
-delete from ldap_cache;
-		`)
-		query_update = string(`
-delete from ldap where DN not in (select DN from ldap_cache);
-insert into ldap (FullName, LastName, FirstName, DN)
-select FullName, LastName, FirstName, DN from ldap_cache where DN not in (select DN from ldap);
-		`)
-	)
-
-	sleepTime = rconf.Sleep_Time
-
-	ldap_Attr := make([]string, 4)
-	userdb := make(map[string]string, 4)
-
-	log.Printf("SQLite Update ***** Starting...\n")
-
-	_, err = db.Exec(query_create)
-	if err != nil {
-		log.Printf("SQLiteUPD::Exec() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	if initLDAPConnector() == "error" {
-		log.Printf("SQLite Update ***** Error connecting to LDAP !!!")
-		sleepTime = 60
-		return
-	}
-
-	l, err = ldap.Dial("tcp", rconf.LDAP_URL[ldap_count][0])
-	if err != nil {
-		log.Printf("SQLiteUPD->LDAP::Initialize() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	//l.Debug = true
-	defer l.Close()
-
-	err = l.Bind(rconf.LDAP_URL[ldap_count][1], rconf.LDAP_URL[ldap_count][2])
-	if err != nil {
-		log.Printf("SQLiteUPD->LDAP::Bind() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
-		if rconf.WLB_LDAP_ATTR[ckl1][1] == "FullName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "FirstName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "LastName" || rconf.WLB_LDAP_ATTR[ckl1][1] == "DN" {
-			ldap_Attr[ckl2] = rconf.WLB_LDAP_ATTR[ckl1][0]
-			ckl2++
-		}
-	}
-
-	//search := ldap.NewSearchRequest("ou=IA Quadra,ou=Quadra,o=Enterprise", 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-	search := ldap.NewSearchRequest(rconf.LDAP_URL[ldap_count][3], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldap_Attr, nil)
-
-	//log.Printf("Search: %v\n%v\n%v\n%v\n", search, rconf.LDAP_URL[ldap_count][3], ldap.NeverDerefAliases, ldap_Attr)
-
-	sr, err := l.Search(search)
-	if err != nil {
-		log.Printf("SQLiteUPD->LDAP::Search() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	log.Printf("SQLite Update ***** search: %s // found: %d\n", search.Filter, len(sr.Entries))
-
-	if len(sr.Entries) > 0 {
-		ckl2 = 0
-		for _, entry := range sr.Entries {
-			for _, attr := range entry.Attributes {
-				for ckl1 = 0; ckl1 < len(rconf.WLB_LDAP_ATTR); ckl1++ {
-					if rconf.WLB_LDAP_ATTR[ckl1][0] == attr.Name {
-						userdb[rconf.WLB_LDAP_ATTR[ckl1][1]] = fmt.Sprintf("%s", strings.ToLower(strings.Join(attr.Values, ",")))
-					}
-				}
-			}
-			stmt, err := db.Prepare("INSERT INTO ldap_cache (FullName, LastName, FirstName, DN) values (?,?,?,?)")
-			if err != nil {
-				log.Printf("SQLiteUPD::Prepare() error: %v\n", err)
-				sleepTime = 60
-				return
-			}
-			_, err = stmt.Exec(userdb["FullName"], userdb["LastName"], userdb["FirstName"], userdb["DN"])
-			//if err != nil {
-			//	log.Printf("SQLite::Exec() error: %v\n", err)
-			//}
-			if ckl2 > 0 && ckl2 == int(ckl2/100)*100 {
-				log.Printf("SQLite Update ***** %7d elements passed...\n", ckl2)
-			}
-			ckl2++
-		}
-		log.Printf("SQLite Update ***** %7d elements passed...\n", ckl2)
-	}
-
-	_, err = db.Exec(query_update)
-	if err != nil {
-		log.Printf("SQLiteUPD::Query() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	_, err = db.Exec(query_clean)
-	if err != nil {
-		log.Printf("SQLite::Query() error: %v\n", err)
-		sleepTime = 60
-		return
-	}
-
-	log.Printf("SQLite Update ***** Completed!\n")
-}
 
 func initLDAPConnector() string {
 	var (
@@ -318,51 +155,8 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 	}
 }
 
-func loginHandler(w http.ResponseWriter, r *http.Request) {
-	username := r.FormValue("username")
-	password := r.FormValue("password")
-
-	if len(username) < 5 || len(password) < 5 {
-		t, err := template.ParseFiles("templates/header.html")
-		if err != nil {
-			fmt.Fprintf(w, err.Error())
-			log.Println(err.Error())
-			return
-		}
-
-		t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": "#FF0000", "BGColor": "#FFEEEE"})
-
-		t, err = template.ParseFiles("templates/search.html")
-		if err != nil {
-			fmt.Fprintf(w, err.Error())
-			log.Println(err.Error())
-			return
-		}
-
-		t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": "Yes", "LineColor": "#FFDDDD"})
-
-		t, err = template.ParseFiles("templates/login.html")
-		if err != nil {
-			fmt.Fprintf(w, err.Error())
-			log.Println(err.Error())
-			return
-		}
-
-		t.ExecuteTemplate(w, "login", nil)
-
-		t, err = template.ParseFiles("templates/footer.html")
-		if err != nil {
-			fmt.Fprintf(w, err.Error())
-			log.Println(err.Error())
-			return
-		}
-
-		t.ExecuteTemplate(w, "footer", template.FuncMap{"WebBookVersion": pVersion, "xMailBT": rconf.WLB_MailBT, "LineColor": "#FFDDDD"})
-
-	} else {
-		fmt.Fprintf(w, "%s / %s\n", username, password)
-	}
-
+func getIPAddress(r *http.Request) string {
+	return fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], strings.Trim(strings.Trim(strings.Replace(r.Header.Get("X-FORWARDED-FOR"), "127.0.0.1", "", -1), " "), ","))
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -390,7 +184,30 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 		l   *ldap.Conn
 		err error
+
+		xFRColor  = string("#FFFFFF")
+		xBGColor  = string("#FFFFFF")
+		LUserName = string("")
 	)
+
+	username, userperm := CheckUserSession(r, w)
+
+	//fmt.Printf("%s / %d\n", username, userperm)
+
+	switch userperm {
+	case 100:
+		xFRColor = "#FF0000"
+		xBGColor = "#FFFFFF"
+		LUserName = username
+	case 1:
+		xFRColor = "#0000FF"
+		xBGColor = "#FFFFFF"
+		LUserName = username
+	default:
+		xFRColor = "#FFFFFF"
+		xBGColor = "#FFFFFF"
+		LUserName = ""
+	}
 
 	ldap_Attr = make([]string, len(rconf.WLB_LDAP_ATTR))
 
@@ -406,7 +223,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	get_ln := r.FormValue("LastName")
 	searchMode := r.FormValue("SearchMode")
 
-	remIPClient := fmt.Sprintf("%s (%v)", strings.Split(r.RemoteAddr, ":")[0], strings.Trim(strings.Trim(strings.Replace(r.Header.Get("X-FORWARDED-FOR"), "127.0.0.1", "", -1), " "), ","))
+	remIPClient := getIPAddress(r)
 	//	log.Printf("DN: %s --- CN: %s", get_dn, get_cn)
 
 	if get_dn == "" {
@@ -532,7 +349,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": "#FFFFFF", "BGColor": "#FFFFFF"})
+	t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": xFRColor, "BGColor": xBGColor})
 
 	t, err = template.ParseFiles("templates/search.html")
 	if err != nil {
@@ -541,7 +358,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage, "LineColor": "#EEEEEE"})
+	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage, "LineColor": "#EEEEEE", "LUserName": LUserName, "LoginShow": "Yes"})
 
 	t, err = template.ParseFiles("templates/index.html")
 	if err != nil {
@@ -710,7 +527,8 @@ func main() {
 	log.Printf(" _")
 
 	sqliteInit()
-
+	pgInit()
+	defer dbpg.Close()
 	defer db.Close()
 
 	SABModules.Log_OFF()
