@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	// PostgreSQL
 	"database/sql"
@@ -31,7 +32,7 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 
 		ldap_table_check = int(1)
 
-		ldap_que_check_tables = string("SELECT count(tablename) FROM pg_catalog.pg_tables where tablename like 'ldap%';")
+		ldap_que_check_tables = string("SELECT count(tablename) FROM pg_catalog.pg_tables where tablename like 'ldap%' or tablename like 'aaa%';")
 	)
 
 	log.Printf(".")
@@ -79,6 +80,10 @@ func LDAP_Make(conf *SABModules.Config_STR) int {
 	} else {
 		log.Printf("\tLDAP DB Good!")
 	}
+
+	log.Printf("\t\tSleep for 10 seconds...")
+
+	time.Sleep(time.Duration(10) * time.Second)
 
 	log.Printf("\t\tUpdate LDAP orgs and deps...")
 

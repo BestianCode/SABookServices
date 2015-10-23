@@ -66,6 +66,14 @@ td.UserInfo_leftHead {
     text-align: right;
     white-space: nowrap;
 }
+td.UserInfo_leftHeadAdm {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 14px;
+    text-align: right;
+    white-space: nowrap;
+    text-decoration: underline;
+    color: #AA0000;
+}
 td.UserInfo_workplace {
     font-size: 10px;
     font-weight: normal;
@@ -77,6 +85,13 @@ td.UserInfo_range {
     font-weight: normal;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
+}
+td.UserInfo_rangeAdm {
+    font-size: 14px;
+    font-weight: normal;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+    color: #FF0000;
 }
 td.UserInfo_mailto {
     font-size: 14px;
@@ -121,7 +136,7 @@ td.Text_Info {
     color: #428bca;
 }
 td.Auth {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: right;
@@ -146,4 +161,45 @@ td.AuthMess {
     white-space: nowrap;
     padding-left: 15px;
     border: 1;
+}
+td.UserMod  {
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    text-align: left;
+    white-space: nowrap;
+    color: #FF0000;
+}
+td.PopUpBtn {
+    font-size: 14px;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: center;
+    color: #005500;
+    white-space: nowrap;
+}
+.envelope {
+    display: none;
+    position: absolute;
+  /*width: 600px;
+    height: 300px;*/
+    background: #e2ebfa;
+/*  url(images/envelope.png) center no-repeat;*/
+    z-index:1002;
+    position: relative;
+/*    margin: 10% auto;*/
+    padding: 15px;
+}
+.black-overlay{
+    display: none;
+    position: absolute;
+    top: 0%;
+    left: 0%;
+    width: 100%;
+    height: 1000%;
+    overflow: hidden;
+    background-color: black;
+    z-index:1001;
+    -moz-opacity: 0.7;
+    opacity:.70;
+    filter: alpha(opacity=70);
 }

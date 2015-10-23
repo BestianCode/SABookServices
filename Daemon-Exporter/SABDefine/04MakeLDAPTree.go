@@ -1,7 +1,7 @@
 package SABDefine
 
 var (
-	LDAP_Tables_am = int(9)
+	LDAP_Tables_am = int(11)
 
 	LDAP_Scheme_create = string(`
 
@@ -9,12 +9,13 @@ drop table if exists aaa_logins;
 drop table if exists aaa_dns;
 
 CREATE TABLE IF NOT EXISTS aaa_logins (
-    id integer NOT NULL,
+    id integer NOT NULL PRIMARY KEY,
     login character varying(255) NOT NULL,
     fullname character varying(255) NOT NULL,
     password character varying(255) NOT NULL,
+    uid bytea,
     role integer NOT NULL,
-    PRIMARY KEY (id)
+    UNIQUE (uid)
 );
 
 CREATE TABLE IF NOT EXISTS aaa_dns (

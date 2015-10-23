@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	//"strconv"
-	//"strings"
+	"strings"
 	//"syscall"
 	//"os"
 	"time"
@@ -39,9 +39,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 	username = r.FormValue("username")
 	password = r.FormValue("password")
 
+	RedirectDN := r.FormValue("RPR")
+
+	if len(RedirectDN) < 1 {
+		RedirectDN = "/"
+	} else {
+		RedirectDN = strings.Replace(RedirectDN, "'", "", -1)
+	}
+
 	if r.FormValue("go") == "unlogin" {
 		RemoveUserSession(r)
-		http.Redirect(w, r, "/", http.StatusMovedPermanently)
+		http.Redirect(w, r, RedirectDN, http.StatusMovedPermanently)
 	}
 
 	remIPClient := getIPAddress(r)
@@ -78,7 +86,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		t.ExecuteTemplate(w, "login", nil)
+		t.ExecuteTemplate(w, "login", template.FuncMap{"RedirectDN": RedirectDN})
 
 		t, err = template.ParseFiles("templates/footer.html")
 		if err != nil {
@@ -115,7 +123,8 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			log.Printf("%s AAA Login enter with username %s (%s)\n", remIPClient, username, userID)
-			http.Redirect(w, r, "/", http.StatusMovedPermanently)
+
+			http.Redirect(w, r, RedirectDN, http.StatusMovedPermanently)
 
 		} else {
 			log.Printf("%s AAA Login ERROR with username %s\n", remIPClient, username)

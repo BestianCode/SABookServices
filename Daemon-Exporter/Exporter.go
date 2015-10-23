@@ -17,7 +17,7 @@ func main() {
 
 	const (
 		pName = string("SABook Exporter Daemon")
-		pVer  = string("4 2015.10.13.03.15")
+		pVer  = string("4 2015.10.24.01.15")
 
 		pg_MultiInsert = int(50)
 	)
@@ -26,9 +26,7 @@ func main() {
 		def_config_file = string("./Exporter.json")             // Default configuration file
 		def_log_file    = string("/var/log/ABook/Exporter.log") // Default log file
 		def_daemon_mode = string("NO")                          // Default start in foreground
-
-		my_error int
-
+		my_error        int
 		st_MSSQL_to_PG  = int(0)
 		st_LDAP_to_PG   = int(0)
 		st_Oracle_to_PG = int(0)
@@ -36,10 +34,8 @@ func main() {
 		st_AD_UP        = int(0)
 		st_AD_to_PG     = int(0)
 		st_DB_clean     = int(0)
-
-		sleep_counter = int(0)
-
-		rconf SABModules.Config_STR
+		sleep_counter   = int(0)
+		rconf           SABModules.Config_STR
 	)
 
 	fmt.Printf("\n\t%s V%s\n\n", pName, pVer)

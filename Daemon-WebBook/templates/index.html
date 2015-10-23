@@ -13,9 +13,38 @@
 				{{if $value.USERName }}
 					{{if $value.FullName }}
 						<tr>
-							<td class="UserInfo_Titless">
-								<h3><a>{{ $value.FullName }}</a></h3>
-							</td>
+						  <td>
+						    <table width="100%"><tr>
+								<td class="UserInfo_Title">
+									<h3><a>{{ $value.FullName }}</a></h3>
+								</td>
+						{{ if $value.AdminMode }}
+<!--								<td class="UserMod" style="color: #009900">(</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">password</a>
+								</td>
+								<td class="UserMod" style="color: #009900">/</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=CardDAV_DN">CardDAV</a>
+								</td>
+								<td class="UserMod" style="color: #009900">/</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=JITSI">JITSI</a>
+								</td>
+								<td class="UserMod" style="color: #009900">/</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode1">Mode1</a>
+								<td class="UserMod" style="color: #009900">/</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode2">Mode2</a>
+								<td class="UserMod" style="color: #009900">/</td>
+								<td class="UserMod" width="1%">
+									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode3">Mode3</a>
+								</td>
+								<td class="UserMod" style="color: #009900">)</td>-->
+						{{ end }}
+							</tr></table>
+						  </td>
 						</tr>
 					{{ end }}
 						<tr>
@@ -48,12 +77,144 @@ UID -->
 										<td class="UserInfo_range"><a>{{ $value.PhoneExt }}</a></td>
 									</tr>
 								{{ end }}
+						{{ if $value.AdminMode }}
 								{{if $value.ADLogin }}
 									<tr>
-										<td class="UserInfo_leftHead">Логин Active Directory</td>
-										<td class="UserInfo_range"><a>{{ $value.ADLogin }}</a></td>
+										<td class="UserInfo_leftHeadAdm">Active Directory Login</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.ADLogin}}</a></td>
 									</tr>
 								{{ end }}
+								{{if $value.ADDomain }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">Active Directory Domain</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.ADDomain}}</a></td>
+									</tr>
+								{{ end }}
+								{{ if $value.UID }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">1C UID</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.UID}}</a></td>
+									</tr>
+								{{ end }}
+									<tr><td><hr noshade size=1 align=left width=50%></td><td><hr noshade size=1 align=left width=50%></td></tr>
+						{{ if $value.AAALogin }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">SAB Login</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAALogin}}</a></td>
+									</tr>
+								{{ if $value.AAAFullName }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">SAB FullName</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAAFullName}}</a></td>
+									</tr>
+								{{ end }}
+								{{ if $value.AAAPassword }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">SAB Password</td>
+										<td>
+											<table>
+												<tr>
+													<td class="UserInfo_rangeAdm">
+														<a style="color: #FF0000">{{$value.AAAPassword}}</a>
+													</td>
+													<td class="UserMod">
+<table>
+	<tr>
+		<td>
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';document.getElementById('pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';">( изменить пароль )</a>			
+			<div id="envelope_{{$value.ADLogin}}_{{$value.ADDomain}}" class="envelope">
+			<form method="post" action="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">
+				<table>
+					<tr>
+						<td class="PopUpBtn">
+							<input type="text" name="password_x1" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* введите пароль..':this.value;" value="* введите пароль..." maxlength="16" size="16"/>
+						</td>
+						<td class="PopUpBtn">
+							<input type="text" name="password_x2" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* повторите пароль...':this.value;" value="* повторите пароль..." maxlength="16" size="16"/>
+						</td>
+					</tr>
+					<tr>
+						<td class="PopUpBtn">
+							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none';document.getElementById('pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none'">
+						</td>
+						<td class="PopUpBtn">
+							<input type="submit" name="send" value="Установить">
+						</td>
+					</tr>
+				</table>
+				</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}" class="black-overlay"></div>
+		</td>
+	</tr>
+</table>
+<!--														<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">&nbsp;(change password)</a>
+-->
+
+
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+								{{ end }}
+								{{ if $value.AAARole }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">SAB Role</td>
+										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAARole}}</a></td>
+									</tr>
+								{{ end }}
+						{{ else }}
+									<tr>
+										<td class="UserInfo_leftHeadAdm">SAB System</td>
+										<td class="UserMod">
+
+										<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=CardDAV_DN"></a>
+
+<table>
+	<tr>
+		<td>
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';document.getElementById('create_user_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';">( зарегистрировать пользователя в системе )</a>	
+			<div id="envelope_{{$value.ADLogin}}_{{$value.ADDomain}}" class="envelope">
+			<form method="post" action="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=USER_CREATE">
+				<table>
+					<tr>
+						<td class="PopUpBtn">
+							<input type="text" name="password_x1" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* введите пароль..':this.value;" value="* введите пароль..." maxlength="16" size="16"/>
+						</td>
+						<td class="PopUpBtn">
+							<input type="text" name="password_x2" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* повторите пароль...':this.value;" value="* повторите пароль..." maxlength="16" size="16"/>
+						</td>
+					</tr>
+					<tr>
+						<td class="PopUpBtn">
+							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none';document.getElementById('create_user_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none'">
+						</td>
+						<td class="PopUpBtn">
+							<input type="submit" name="send" value="Зарегестрировать">
+						</td>
+					</tr>
+				</table>
+				</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="create_user_{{$value.ADLogin}}_{{$value.ADDomain}}" class="black-overlay"></div>
+		</td>
+	</tr>
+</table>
+
+										</td>
+									</tr>
+						{{ end }}
+									<tr><td><hr noshade size=1 align=left width=50%></td><td><hr noshade size=1 align=left width=50%></td></tr>
+						{{ end }}
 								{{if $value.Mail }}
 									<tr>
 										<td class="UserInfo_leftHead">E-Mail</td>

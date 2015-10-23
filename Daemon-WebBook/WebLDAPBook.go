@@ -17,7 +17,7 @@ import (
 
 	//"database/sql"
 	// PostgreSQL
-	//_ "github.com/lib/pq"
+	_ "github.com/lib/pq"
 	// SQLite
 	//_ "github.com/mattn/go-sqlite3"
 
@@ -27,24 +27,33 @@ import (
 )
 
 type tList struct {
-	URL      string
-	URLName  string
-	ORGName  string
-	USERName string
-	FullName string
-	PhoneInt string
-	PhoneExt string
-	Mobile   string
-	Mail     string
-	Position string
-	ADLogin  string
+	URL         string
+	URLName     string
+	ORGName     string
+	USERName    string
+	FullName    string
+	PhoneInt    string
+	PhoneExt    string
+	Mobile      string
+	Mail        string
+	Position    string
+	ADLogin     string
+	ADDomain    string
+	AdminMode   string
+	UID         string
+	AAALogin    string
+	AAAPassword string
+	AAAFullName string
+	AAARole     string
 }
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.08.21.00")
+	pVer      = string("1 alpha 2015.10.23.01.10")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
+	roleAdmin = 100
+	roleUser  = 1
 )
 
 var (
@@ -92,13 +101,17 @@ func initLDAPConnector() string {
 
 // ====================================================================================================
 
-func getMore(remIPClient string, fField map[string]string, fType string, l *ldap.Conn, dnList map[string]tList) {
+func getMore(remIPClient string, fField map[string]string, fType string, l *ldap.Conn, dnList map[string]tList, setAdminMode string) {
 	var (
 		fPath            string
 		fURL             string
 		fURLName         string
 		ckl1, ckl2, ckl3 int
 		ldap_Attr        []string
+		aaa_login        = string("")
+		aaa_password     = string("")
+		aaa_fullname     = string("")
+		aaa_role         = string("")
 	)
 
 	if fField["DN"] != "" && (fField["USERName"] != "" || fField["ORGName"] != "") {
@@ -151,7 +164,32 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 		fField["DN"] = fmt.Sprintf("/Go%s?dn=%s", fType, fField["DN"])
 		fURL = fmt.Sprintf("/Go%s?dn=%s", fType, fURL)
 		log.Printf("%s <-- %s", remIPClient, fField["DN"])
-		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"]}
+		if setAdminMode == "Yes" {
+			queryx := fmt.Sprintf("select login,password,fullname,role from aaa_logins where uid='%s';", fField["UID"])
+			//fmt.Printf("%s\n", queryx)
+			rows, err := dbpg.Query(queryx)
+			if err != nil {
+				log.Printf("PG::Query() Select info from aaa_logins: %v\n", err)
+				return
+			}
+
+			rows.Next()
+			rows.Scan(&aaa_login, &aaa_password, &aaa_fullname, &aaa_role)
+			if len(aaa_password) > 0 {
+				aaa_password = "Set"
+			}
+			xt, _ := strconv.Atoi(aaa_role)
+			switch xt {
+			case roleAdmin:
+				aaa_role = "Administrator"
+			case roleUser:
+				aaa_role = "User"
+			default:
+				aaa_role = "Guest"
+			}
+		}
+		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"], ADDomain: fField["ADDomain"], AdminMode: setAdminMode, UID: fField["UID"], AAALogin: aaa_login, AAAPassword: aaa_password, AAAFullName: aaa_fullname, AAARole: aaa_role}
+		//fmt.Printf("%v\n", dnList)
 	}
 }
 
@@ -185,9 +223,10 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		l   *ldap.Conn
 		err error
 
-		xFRColor  = string("#FFFFFF")
-		xBGColor  = string("#FFFFFF")
-		LUserName = string("")
+		xFRColor     = string("#FFFFFF")
+		xBGColor     = string("#FFFFFF")
+		LUserName    = string("")
+		setAdminMode = string("")
 	)
 
 	username, userperm := CheckUserSession(r, w)
@@ -195,11 +234,12 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	//fmt.Printf("%s / %d\n", username, userperm)
 
 	switch userperm {
-	case 100:
+	case roleAdmin:
 		xFRColor = "#FF0000"
 		xBGColor = "#FFFFFF"
 		LUserName = username
-	case 1:
+		setAdminMode = "Yes"
+	case roleUser:
 		xFRColor = "#0000FF"
 		xBGColor = "#FFFFFF"
 		LUserName = username
@@ -358,7 +398,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage, "LineColor": "#EEEEEE", "LUserName": LUserName, "LoginShow": "Yes"})
+	t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": go_home_button, "PrevDN": dn_back, "DN": dn, "xSearch": xSearch, "xMessage": xMessage, "LineColor": "#EEEEEE", "LUserName": LUserName, "LoginShow": "Yes", "RedirectDN": r.RequestURI})
 
 	t, err = template.ParseFiles("templates/index.html")
 	if err != nil {
@@ -403,7 +443,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-				getMore(remIPClient, fField, fType, l, dnList)
+				getMore(remIPClient, fField, fType, l, dnList, setAdminMode)
 			}
 			t.ExecuteTemplate(w, "index", dnList)
 		}
@@ -436,7 +476,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 					}
 				}
 			}
-			getMore(remIPClient, fField, fType, l, dnList)
+			getMore(remIPClient, fField, fType, l, dnList, setAdminMode)
 		}
 		t.ExecuteTemplate(w, "index", dnList)
 	}
