@@ -18,31 +18,6 @@
 								<td class="UserInfo_Title">
 									<h3><a>{{ $value.FullName }}</a></h3>
 								</td>
-						{{ if $value.AdminMode }}
-<!--								<td class="UserMod" style="color: #009900">(</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">password</a>
-								</td>
-								<td class="UserMod" style="color: #009900">/</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=CardDAV_DN">CardDAV</a>
-								</td>
-								<td class="UserMod" style="color: #009900">/</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=JITSI">JITSI</a>
-								</td>
-								<td class="UserMod" style="color: #009900">/</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode1">Mode1</a>
-								<td class="UserMod" style="color: #009900">/</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode2">Mode2</a>
-								<td class="UserMod" style="color: #009900">/</td>
-								<td class="UserMod" width="1%">
-									<a style="color: #FF0000" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=Mode3">Mode3</a>
-								</td>
-								<td class="UserMod" style="color: #009900">)</td>-->
-						{{ end }}
 							</tr></table>
 						  </td>
 						</tr>
@@ -121,10 +96,19 @@ UID -->
 <table>
 	<tr>
 		<td>
-			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';document.getElementById('pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';">( изменить пароль )</a>			
-			<div id="envelope_{{$value.ADLogin}}_{{$value.ADDomain}}" class="envelope">
-			<form method="post" action="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.UID}}').style.display='block';document.getElementById('pwd_change_{{$value.UID}}').style.display='block';">( изменить пароль )</a>			
+			<div id="envelope_{{$value.UID}}" class="envelope">
+			<form method="post" action="/modify" onSubmit="return checkPassword(this);">
 				<table>
+					<tr>
+						<td>
+							<input name="uid" value="{{$value.UID}}" type=hidden>
+							<input name="login" value="{{$value.AAALogin}}" type=hidden>
+						</td>
+						<td>
+							<input name="action" value="change_password" type=hidden>
+						</td>
+					</tr>
 					<tr>
 						<td class="PopUpBtn">
 							<input type="text" name="password_x1" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* введите пароль..':this.value;" value="* введите пароль..." maxlength="16" size="16"/>
@@ -135,7 +119,7 @@ UID -->
 					</tr>
 					<tr>
 						<td class="PopUpBtn">
-							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none';document.getElementById('pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none'">
+							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.UID}}').style.display='none';document.getElementById('pwd_change_{{$value.UID}}').style.display='none'">
 						</td>
 						<td class="PopUpBtn">
 							<input type="submit" name="send" value="Установить">
@@ -148,11 +132,11 @@ UID -->
 	</tr>
 	<tr>
 		<td>
-			<div id="pwd_change_{{$value.ADLogin}}_{{$value.ADDomain}}" class="black-overlay"></div>
+			<div id="pwd_change_{{$value.UID}}" class="black-overlay"></div>
 		</td>
 	</tr>
 </table>
-<!--														<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=PWD_CH">&nbsp;(change password)</a>
+<!--														<a style="color: #009900" href="/modify{{$value.UID}}&ACT=PWD_CH">&nbsp;(change password)</a>
 -->
 
 
@@ -173,29 +157,79 @@ UID -->
 										<td class="UserInfo_leftHeadAdm">SAB System</td>
 										<td class="UserMod">
 
-										<a style="color: #009900" href="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=CardDAV_DN"></a>
+										<a style="color: #009900" href="/modify{{$value.UID}}&ACT=CardDAV_DN"></a>
 
 <table>
 	<tr>
 		<td>
-			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';document.getElementById('create_user_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='block';">( зарегистрировать пользователя в системе )</a>	
-			<div id="envelope_{{$value.ADLogin}}_{{$value.ADDomain}}" class="envelope">
-			<form method="post" action="MDN={{$value.ADLogin}}@{{$value.ADDomain}}&ACT=USER_CREATE">
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.UID}}').style.display='block';document.getElementById('create_user_{{$value.UID}}').style.display='block';">( зарегистрировать пользователя в системе )</a>	
+			<div id="envelope_{{$value.UID}}" class="envelope">
+			<form method="post" action="/modify" onSubmit="return checkPasswordAndLogin(this);">
 				<table>
 					<tr>
-						<td class="PopUpBtn">
-							<input type="text" name="password_x1" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* введите пароль..':this.value;" value="* введите пароль..." maxlength="16" size="16"/>
+						<td>&nbsp;
 						</td>
-						<td class="PopUpBtn">
-							<input type="text" name="password_x2" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* повторите пароль...':this.value;" value="* повторите пароль..." maxlength="16" size="16"/>
+						<td>
+							<input name="action" value="create_user" type=hidden>
 						</td>
 					</tr>
 					<tr>
-						<td class="PopUpBtn">
-							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none';document.getElementById('create_user_{{$value.ADLogin}}_{{$value.ADDomain}}').style.display='none'">
+						<td class="UserInfo_leftHead">UID</td>
+						<td class="PopUpBtnL">
+							<input type="text" name="uid" value="{{$value.UID}}" maxlength="63" size="64" readonly>
 						</td>
-						<td class="PopUpBtn">
-							<input type="submit" name="send" value="Зарегестрировать">
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">Ф.И.О.</td>
+						<td class="PopUpBtnL">
+							<input type="text" name="fullname" value="{{$value.FullName}}" maxlength="63" size="64" readonly>
+						</td>
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">Login</td>
+						<td class="PopUpBtnL">
+							<input type="text" name="login" value="{{$value.ADLogin}}@{{$value.ADDomain}}" maxlength="63" size="64">
+						</td>
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">Роль</td>
+						<td class="PopUpBtnL">
+							<select name="role">
+							  <option value="admin">администратор</option>
+							  <option value="user" selected>пользователь</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">Пароль</td>
+						<td>
+							<table>
+							<tr>
+								<td class="PopUpBtnL">
+									<input type="text" name="password_x1" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* введите пароль..':this.value;" value="* введите пароль..." maxlength="16" size="16"/>
+								</td>
+								<td class="PopUpBtnL">
+									<input type="text" name="password_x2" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'* повторите пароль...':this.value;" value="* повторите пароль..." maxlength="16" size="16"/>
+								</td>
+							</tr>
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td>&nbsp;
+						<td>
+							<table>
+							<tr>
+								<td class="PopUpBtn">
+									<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.UID}}').style.display='none';document.getElementById('create_user_{{$value.UID}}').style.display='none'">
+								</td>
+								<td width="90%"></td>
+								<td class="PopUpBtn">
+									<input type="submit" name="send" value="Зарегестрировать">
+								</td>
+
+							</tr>
+							</table>
 						</td>
 					</tr>
 				</table>
@@ -205,7 +239,7 @@ UID -->
 	</tr>
 	<tr>
 		<td>
-			<div id="create_user_{{$value.ADLogin}}_{{$value.ADDomain}}" class="black-overlay"></div>
+			<div id="create_user_{{$value.UID}}" class="black-overlay"></div>
 		</td>
 	</tr>
 </table>

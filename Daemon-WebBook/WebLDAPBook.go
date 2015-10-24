@@ -49,7 +49,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.23.01.10")
+	pVer      = string("1 alpha 2015.10.25.02.00")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
 	roleAdmin = 100
@@ -548,6 +548,7 @@ func main() {
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("./css/"))))
 	http.Handle("/images/", http.StripPrefix("/images/", http.FileServer(http.Dir("./images/"))))
 	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/modify", modifyHandler)
 	http.HandleFunc("/login", loginHandler)
 	http.HandleFunc("/GoOrg", indexHandler)
 	//	fmt.Printf("1 %v\n", rconf)

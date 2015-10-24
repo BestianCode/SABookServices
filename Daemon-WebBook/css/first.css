@@ -65,6 +65,7 @@ td.UserInfo_leftHead {
     font-size: 14px;
     text-align: right;
     white-space: nowrap;
+    color: #000000;
 }
 td.UserInfo_leftHeadAdm {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
@@ -177,21 +178,30 @@ td.PopUpBtn {
     color: #005500;
     white-space: nowrap;
 }
+td.PopUpBtnL {
+    font-size: 14px;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+    color: #005500;
+    white-space: nowrap;
+}
 .envelope {
+    top: 30%;
+    left: 30%;
     display: none;
-    position: absolute;
   /*width: 600px;
     height: 300px;*/
     background: #e2ebfa;
 /*  url(images/envelope.png) center no-repeat;*/
     z-index:1002;
-    position: relative;
-/*    margin: 10% auto;*/
+    position: fixed;
+    /*margin: 10% auto;*/
+    /*overflow: hidden;*/
     padding: 15px;
 }
 .black-overlay{
     display: none;
-    position: absolute;
+    position: fixed;
     top: 0%;
     left: 0%;
     width: 100%;
