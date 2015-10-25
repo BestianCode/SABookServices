@@ -45,11 +45,12 @@ type tList struct {
 	AAAPassword string
 	AAAFullName string
 	AAARole     string
+	NewSABLogin string
 }
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("1 alpha 2015.10.25.02.00")
+	pVer      = string("4 alpha 2015.10.25.22.00")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
 	roleAdmin = 100
@@ -112,6 +113,8 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 		aaa_password     = string("")
 		aaa_fullname     = string("")
 		aaa_role         = string("")
+		newSABLogin      string
+		get_davdn        = string("")
 	)
 
 	if fField["DN"] != "" && (fField["USERName"] != "" || fField["ORGName"] != "") {
@@ -164,10 +167,24 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 		fField["DN"] = fmt.Sprintf("/Go%s?dn=%s", fType, fField["DN"])
 		fURL = fmt.Sprintf("/Go%s?dn=%s", fType, fURL)
 		log.Printf("%s <-- %s", remIPClient, fField["DN"])
+		davDN := ""
 		if setAdminMode == "Yes" {
-			queryx := fmt.Sprintf("select login,password,fullname,role from aaa_logins where uid='%s';", fField["UID"])
+			queryx := fmt.Sprintf("select x.dn from aaa_dns as x, aaa_logins as y where y.uid='%s' and y.id=x.userid;", fField["UID"])
 			//fmt.Printf("%s\n", queryx)
 			rows, err := dbpg.Query(queryx)
+			if err != nil {
+				log.Printf("PG::Query() Select info from aaa_logins: %v\n", err)
+				return
+			}
+
+			for rows.Next() {
+				rows.Scan(&get_davdn)
+				davDN = fmt.Sprintf("%s%s\n", davDN, get_davdn)
+			}
+
+			queryx = fmt.Sprintf("select login,password,fullname,role from aaa_logins where uid='%s';", fField["UID"])
+			//fmt.Printf("%s\n", queryx)
+			rows, err = dbpg.Query(queryx)
 			if err != nil {
 				log.Printf("PG::Query() Select info from aaa_logins: %v\n", err)
 				return
@@ -176,7 +193,9 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 			rows.Next()
 			rows.Scan(&aaa_login, &aaa_password, &aaa_fullname, &aaa_role)
 			if len(aaa_password) > 0 {
-				aaa_password = "Set"
+				aaa_password = "Ok"
+			} else {
+				aaa_password = "NONE!"
 			}
 			xt, _ := strconv.Atoi(aaa_role)
 			switch xt {
@@ -187,8 +206,18 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 			default:
 				aaa_role = "Guest"
 			}
+			if len(fField["ADLogin"]) < 2 || len(fField["ADDomain"]) < 2 {
+				newSABLogin = fField["Mail"]
+			} else {
+				newSABLogin = fmt.Sprintf("%s@%s", fField["ADLogin"], fField["ADDomain"])
+			}
 		}
-		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"], ADDomain: fField["ADDomain"], AdminMode: setAdminMode, UID: fField["UID"], AAALogin: aaa_login, AAAPassword: aaa_password, AAAFullName: aaa_fullname, AAARole: aaa_role}
+
+		if davDN != "" {
+			fmt.Println(davDN)
+		}
+
+		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"], ADDomain: fField["ADDomain"], AdminMode: setAdminMode, UID: fField["UID"], AAALogin: aaa_login, AAAPassword: aaa_password, AAAFullName: aaa_fullname, AAARole: aaa_role, NewSABLogin: newSABLogin}
 		//fmt.Printf("%v\n", dnList)
 	}
 }

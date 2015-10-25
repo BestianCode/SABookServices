@@ -63,6 +63,7 @@ td.UserInfo_Title {
 td.UserInfo_leftHead {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     font-size: 14px;
+    font-weight: normal;
     text-align: right;
     white-space: nowrap;
     color: #000000;
@@ -70,10 +71,10 @@ td.UserInfo_leftHead {
 td.UserInfo_leftHeadAdm {
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     font-size: 14px;
+    font-weight: bold;
     text-align: right;
     white-space: nowrap;
-    text-decoration: underline;
-    color: #AA0000;
+    color: #000000;
 }
 td.UserInfo_workplace {
     font-size: 10px;
@@ -89,10 +90,10 @@ td.UserInfo_range {
 }
 td.UserInfo_rangeAdm {
     font-size: 14px;
-    font-weight: normal;
+    font-weight: bold;
     font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
     text-align: left;
-    color: #FF0000;
+    color: #000000;
 }
 td.UserInfo_mailto {
     font-size: 14px;

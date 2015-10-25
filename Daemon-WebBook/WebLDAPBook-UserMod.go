@@ -28,6 +28,8 @@ import (
 	//	"github.com/gavruk/go-blog-example/models"
 )
 
+//insert into aaa_dns (userid,dn) select id, 'ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise' from aaa_logins where uid='\x5b31353720313330203020333320393020323033203233342031303220313720323236203935203230372037392031322038203132375d';
+
 func modifyHandler(w http.ResponseWriter, r *http.Request) {
 	var (
 		uid         string
@@ -72,13 +74,44 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 				default:
 					rolen = 0
 				}
-				queryx := fmt.Sprintf("insert into aaa_logins (id,login,fullname,password,role,uid) select id+1,'%s','%s',md5('%s:%s:%s'),%d,'%s' from aaa_logins order by id desc limit 1;", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid)
+				//queryx := fmt.Sprintf("insert into aaa_logins (id,login,fullname,password,role,uid) select id+1,'%s','%s',md5('%s:%s:%s'),%d,'%s' from aaa_logins order by id desc limit 1;", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid)
+				queryx := fmt.Sprintf("insert into aaa_logins (login,fullname,password,role,uid) values ('%s','%s',md5('%s:%s:%s'),%d,'%s');", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid)
 				_, err := dbpg.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)
 					log.Printf("PG::Query() Create user: %v\n", err)
 					return
 				}
+			}
+		case "change_role":
+			if len(role) > 0 {
+				switch role {
+				case "admin":
+					rolen = roleAdmin
+				case "user":
+					rolen = roleUser
+				default:
+					rolen = 0
+				}
+				queryx := fmt.Sprintf("update aaa_logins set role=%d where uid='%s';", rolen, uid)
+				_, err := dbpg.Query(queryx)
+				if err != nil {
+					log.Printf("%s\n", queryx)
+					log.Printf("PG::Query() Change role: %v\n", err)
+					return
+				}
+			}
+		case "delete_sab_login":
+			queryx := fmt.Sprintf(`
+delete from wb_auth_session where username in (select login from aaa_logins where uid='%s');
+delete from aaa_dns where userid in (select id from aaa_logins where uid='%s');
+delete from aaa_logins where uid='%s';
+				`, uid, uid, uid)
+			_, err := dbpg.Query(queryx)
+			if err != nil {
+				log.Printf("%s\n", queryx)
+				log.Printf("PG::Query() Change role: %v\n", err)
+				return
 			}
 		}
 

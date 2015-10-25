@@ -57,6 +57,15 @@
 
 			return true;
 		}
+		function checkDelete(form) {
+			check_del = form.check_del.value;
+
+			if (check_del != "удалить нах") {
+				alert("Введите правильно то, что просят...")
+				return false;
+			}
+			return true;
+		}
 		// End -->
 		</script>
 	</head>

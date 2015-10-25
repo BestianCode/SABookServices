@@ -30,7 +30,7 @@ FirstName
 UID -->
 								{{if $value.Position }}
 									<tr>
-										<td class="UserInfo_leftHead">Должность</td>
+										<td class="UserInfo_leftHead" width="30%">Должность</td>
 										<td class="UserInfo_range"><a>{{ $value.Position }}</a></td>
 									</tr>
 								{{ end }}
@@ -53,51 +53,115 @@ UID -->
 									</tr>
 								{{ end }}
 						{{ if $value.AdminMode }}
+									<tr><td><hr noshade size=1 align=left width=100%></td><td><hr noshade size=1 align=left width=50%></td></tr>
 								{{if $value.ADLogin }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">Active Directory Login</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.ADLogin}}</a></td>
+										<td class="UserInfo_rangeAdm"><a>{{$value.ADLogin}}</a></td>
 									</tr>
 								{{ end }}
 								{{if $value.ADDomain }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">Active Directory Domain</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.ADDomain}}</a></td>
+										<td class="UserInfo_rangeAdm"><a>{{$value.ADDomain}}</a></td>
 									</tr>
 								{{ end }}
 								{{ if $value.UID }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">1C UID</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.UID}}</a></td>
+										<td class="UserInfo_rangeAdm"><a>{{$value.UID}}</a></td>
 									</tr>
 								{{ end }}
-									<tr><td><hr noshade size=1 align=left width=50%></td><td><hr noshade size=1 align=left width=50%></td></tr>
+									<tr><td><hr noshade size=1 align=left width=100%></td><td><hr noshade size=1 align=left width=50%></td></tr>
 						{{ if $value.AAALogin }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">SAB Login</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAALogin}}</a></td>
+										<td class="UserInfo_rangeAdm"><a>{{$value.AAALogin}}</a></td>
 									</tr>
 								{{ if $value.AAAFullName }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">SAB FullName</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAAFullName}}</a></td>
+										<td>
+											<table width="100%">
+												<tr>
+													<td class="UserInfo_rangeAdm" width="60%">
+														<a>{{$value.AAAFullName}}</a>
+													</td>
+													<td class="UserMod">
+
+<table width="100%">
+	<tr>
+		<td>
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_del_login_{{$value.UID}}').style.display='block';document.getElementById('delete_sab_login_{{$value.UID}}').style.display='block';">( удалить )</a>	
+			<div id="envelope_del_login_{{$value.UID}}" class="envelope">
+			<form method="post" action="/modify" onSubmit="return checkDelete(this);">
+				<table width="100%">
+					<tr>
+						<td>&nbsp;
+						</td>
+						<td>
+							<input name="action" value="delete_sab_login" type=hidden>
+							<input name="uid" value="{{$value.UID}}" type=hidden>
+						</td>
+					</tr>
+					<tr>
+						<td>&nbsp;
+						</td>
+						<input type="text" name="check_del" onclick="this.value='';" onfocus="this.select()" onblur="this.value=!this.value?'Введите фразу <<удалить нах>>':this.value;" value="Введите фразу <<удалить нах>>" maxlength="12" size="48"/>
+					</tr>
+					<tr>
+						<td>&nbsp;
+						</td>
+						<td>
+							<table width="100%">
+							<tr>
+								<td class="PopUpBtn">
+									<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_del_login_{{$value.UID}}').style.display='none';document.getElementById('delete_sab_login_{{$value.UID}}').style.display='none'">
+								</td>
+								<td width="90%"></td>
+								<td class="PopUpBtn">
+									<input type="submit" name="send" value="удалить">
+								</td>
+
+							</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+				</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="delete_sab_login_{{$value.UID}}" class="black-overlay"></div>
+		</td>
+	</tr>
+</table>
+													</td>
+												</tr>
+											</table>
+										</td>
+
+
+
 									</tr>
 								{{ end }}
 								{{ if $value.AAAPassword }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">SAB Password</td>
 										<td>
-											<table>
+											<table width="100%">
 												<tr>
-													<td class="UserInfo_rangeAdm">
-														<a style="color: #FF0000">{{$value.AAAPassword}}</a>
+													<td class="UserInfo_rangeAdm" width="60%">
+														<a>{{$value.AAAPassword}}</a>
 													</td>
 													<td class="UserMod">
-<table>
+<table width="100%">
 	<tr>
 		<td>
-			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.UID}}').style.display='block';document.getElementById('pwd_change_{{$value.UID}}').style.display='block';">( изменить пароль )</a>			
-			<div id="envelope_{{$value.UID}}" class="envelope">
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_pass_{{$value.UID}}').style.display='block';document.getElementById('pwd_change_{{$value.UID}}').style.display='block';">( изменить пароль )</a>			
+			<div id="envelope_pass_{{$value.UID}}" class="envelope">
 			<form method="post" action="/modify" onSubmit="return checkPassword(this);">
 				<table>
 					<tr>
@@ -119,7 +183,7 @@ UID -->
 					</tr>
 					<tr>
 						<td class="PopUpBtn">
-							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.UID}}').style.display='none';document.getElementById('pwd_change_{{$value.UID}}').style.display='none'">
+							<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_pass_{{$value.UID}}').style.display='none';document.getElementById('pwd_change_{{$value.UID}}').style.display='none'">
 						</td>
 						<td class="PopUpBtn">
 							<input type="submit" name="send" value="Установить">
@@ -149,7 +213,71 @@ UID -->
 								{{ if $value.AAARole }}
 									<tr>
 										<td class="UserInfo_leftHeadAdm">SAB Role</td>
-										<td class="UserInfo_rangeAdm"><a style="color: #FF0000">{{$value.AAARole}}</a></td>
+										<td>
+											<table width="100%">
+												<tr>
+													<td class="UserInfo_rangeAdm" width="60%">
+														<a>{{$value.AAARole}}</a>
+													</td>
+													<td class="UserMod">
+
+<table width="100%">
+	<tr>
+		<td>
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_role_{{$value.UID}}').style.display='block';document.getElementById('change_role_{{$value.UID}}').style.display='block';">( изменить роль )</a>	
+			<div id="envelope_role_{{$value.UID}}" class="envelope">
+			<form method="post" action="/modify">
+				<table>
+					<tr>
+						<td>&nbsp;
+						</td>
+						<td>
+							<input name="action" value="change_role" type=hidden>
+							<input name="uid" value="{{$value.UID}}" type=hidden>
+						</td>
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">Роль</td>
+						<td class="PopUpBtnL">
+							<select name="role">
+							  <option value="admin">администратор</option>
+							  <option value="user" selected>пользователь</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td>&nbsp;
+						</td>
+						<td>
+							<table>
+							<tr>
+								<td class="PopUpBtn">
+									<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_role_{{$value.UID}}').style.display='none';document.getElementById('change_role_{{$value.UID}}').style.display='none'">
+								</td>
+								<td width="90%"></td>
+								<td class="PopUpBtn">
+									<input type="submit" name="send" value="Применить">
+								</td>
+
+							</tr>
+							</table>
+						</td>
+					</tr>
+				</table>
+				</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<div id="change_role_{{$value.UID}}" class="black-overlay"></div>
+		</td>
+	</tr>
+</table>
+													</td>
+												</tr>
+											</table>
+										</td>
 									</tr>
 								{{ end }}
 						{{ else }}
@@ -157,13 +285,11 @@ UID -->
 										<td class="UserInfo_leftHeadAdm">SAB System</td>
 										<td class="UserMod">
 
-										<a style="color: #009900" href="/modify{{$value.UID}}&ACT=CardDAV_DN"></a>
-
 <table>
 	<tr>
 		<td>
-			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_{{$value.UID}}').style.display='block';document.getElementById('create_user_{{$value.UID}}').style.display='block';">( зарегистрировать пользователя в системе )</a>	
-			<div id="envelope_{{$value.UID}}" class="envelope">
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_reg_{{$value.UID}}').style.display='block';document.getElementById('create_user_{{$value.UID}}').style.display='block';">( зарегистрировать пользователя в системе )</a>	
+			<div id="envelope_reg_{{$value.UID}}" class="envelope">
 			<form method="post" action="/modify" onSubmit="return checkPasswordAndLogin(this);">
 				<table>
 					<tr>
@@ -188,7 +314,7 @@ UID -->
 					<tr>
 						<td class="UserInfo_leftHead">Login</td>
 						<td class="PopUpBtnL">
-							<input type="text" name="login" value="{{$value.ADLogin}}@{{$value.ADDomain}}" maxlength="63" size="64">
+							<input type="text" name="login" value="{{$value.NewSABLogin}}" maxlength="63" size="64">
 						</td>
 					</tr>
 					<tr>
@@ -217,15 +343,16 @@ UID -->
 					</tr>
 					<tr>
 						<td>&nbsp;
+						</td>
 						<td>
 							<table>
 							<tr>
 								<td class="PopUpBtn">
-									<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_{{$value.UID}}').style.display='none';document.getElementById('create_user_{{$value.UID}}').style.display='none'">
+									<input type="reset" value="Отмена"  href="javascript:void(0)" onclick="document.getElementById('envelope_reg_{{$value.UID}}').style.display='none';document.getElementById('create_user_{{$value.UID}}').style.display='none'">
 								</td>
 								<td width="90%"></td>
 								<td class="PopUpBtn">
-									<input type="submit" name="send" value="Зарегестрировать">
+									<input type="submit" name="send" value="Зарегистрировать">
 								</td>
 
 							</tr>
@@ -247,7 +374,7 @@ UID -->
 										</td>
 									</tr>
 						{{ end }}
-									<tr><td><hr noshade size=1 align=left width=50%></td><td><hr noshade size=1 align=left width=50%></td></tr>
+									<tr><td><hr noshade size=1 align=left width=100%></td><td><hr noshade size=1 align=left width=50%></td></tr>
 						{{ end }}
 								{{if $value.Mail }}
 									<tr>
