@@ -95,6 +95,13 @@ td.UserInfo_rangeAdm {
     text-align: left;
     color: #000000;
 }
+td.UserInfo_rangeDNList {
+    font-size: 10px;
+    font-weight: bold;
+    font-family: 'lucida sans unicode', 'lucida grande', sans-serif;
+    text-align: left;
+    color: #000000;
+}
 td.UserInfo_mailto {
     font-size: 14px;
     font-weight: bold;
@@ -187,11 +194,11 @@ td.PopUpBtnL {
     white-space: nowrap;
 }
 .envelope {
-    top: 30%;
-    left: 30%;
+    top: 100px;
+    left: 100px;
     display: none;
-  /*width: 600px;
-    height: 300px;*/
+    width: auto;
+    height: auto;
     background: #e2ebfa;
 /*  url(images/envelope.png) center no-repeat;*/
     z-index:1002;

@@ -18,6 +18,7 @@
 	"SABRealm":			"SABookDAV",
 
 	"WLB_SessTimeOut":	30,
+	"WLB_DavDNTreeDepLev":	5,
 
 	"WLB_LDAP_ATTR":	[
 					["o","ORGName"],
