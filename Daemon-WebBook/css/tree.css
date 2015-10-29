@@ -1,0 +1,62 @@
+#multi-derevo {
+	/*width: 220px;*/
+	border: solid;
+	border-color: silver gray gray silver;
+	/*border-width: 2px;*/
+	padding: 0 0 1em 0;
+	/*font-size: 1.3em;*/
+}
+span {
+	text-decoration: none;
+	display: block;
+	margin: 0 0 0 1.2em;   		
+	background-color: transparent;
+	border: solid silver;
+	border-width: 0 0 1px 1px;
+}
+span a  {
+	display: block; 
+	position: relative;
+	top: .95em;
+	background-color: #fff;
+	margin: 0 0 .2em .7em;
+	padding: 0 0.3em;
+}
+
+ul, li {
+	list-style-image:none;
+	list-style-position:outside;
+	list-style-type:none;
+	margin:0;
+	padding:0;
+}
+ul li {
+	line-height: 1.2em;
+}
+ul li ul {
+	display: none;
+}
+ul li ul li {
+	margin: 0 0 0 1.2em;
+	border-left: 1px solid silver;
+}
+li.last {
+	border: none;  
+}
+.marker {
+	border-color:  transparent transparent  transparent gray;
+	border-style: solid; 
+	border-width: .25em 0 .25em .5em;   
+	margin: .35em .25em 0 0; 
+	float: left; 
+	width: 0px; 
+	height: 0px; 
+	line-height: 0px;
+}
+.marker.open {
+	border-color: gray transparent transparent transparent;
+	border-width: .5em .25em 0 .25em;   
+}
+* html #multi-derevo * { height: 1%;}
+* html .marker { border-style: dotted dotted dotted solid; }
+* html .marker.open { border-style: solid dotted dotted dotted; }

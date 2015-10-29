@@ -17,11 +17,9 @@ import (
 	//LDAP
 	//"github.com/go-ldap/ldap"
 
-	//"database/sql"
+	"database/sql"
 	// PostgreSQL
-	//_ "github.com/lib/pq"
-	// SQLite
-	//_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 
 	"github.com/BestianRU/SABookServices/SABModules"
 	//	"github.com/kabukky/httpscerts"
@@ -105,6 +103,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				defer dbpg.Close()
 		*/
+
+		dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+		if err != nil {
+			log.Fatalf("PG_INIT::Open() error: %v\n", err)
+		}
+
+		defer dbpg.Close()
+
 		queryx = fmt.Sprintf("select distinct login from aaa_logins where login='%s' and password=md5('%s:%s:%s') limit 1;", username, username, rconf.SABRealm, password)
 		//fmt.Printf("%s\n", queryx)
 		rows, err := dbpg.Query(queryx)
@@ -147,13 +153,24 @@ func GenerateSessionId(user string) string {
 }
 
 func StoreUserSession(user string, w http.ResponseWriter) string {
+
+	var err error
+
 	userID := GenerateSessionId(user)
 	user_cookie := &http.Cookie{
 		Name:    COOKIE_ID,
 		Value:   userID,
 		Expires: time.Now().Add(time.Duration(rconf.WLB_SessTimeOut) * time.Minute),
 	}
-	_, err := dbpg.Query(fmt.Sprintf("insert into wb_auth_session (username, sessname, exptime) values ('%s','%s',%v);", user, userID, time.Now().Unix()))
+
+	dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+	if err != nil {
+		log.Fatalf("PG_INIT::Open() error: %v\n", err)
+	}
+
+	defer dbpg.Close()
+
+	_, err = dbpg.Query(fmt.Sprintf("insert into wb_auth_session (username, sessname, exptime) values ('%s','%s',%v);", user, userID, time.Now().Unix()))
 	if err != nil {
 		log.Printf("PG::Query() Insert session error: %v\n", err)
 		return "error"
@@ -164,12 +181,23 @@ func StoreUserSession(user string, w http.ResponseWriter) string {
 }
 
 func UpdateUserSession(sess string, w http.ResponseWriter) string {
+
+	var err error
+
 	user_cookie := &http.Cookie{
 		Name:    COOKIE_ID,
 		Value:   sess,
 		Expires: time.Now().Add(time.Duration(rconf.WLB_SessTimeOut) * time.Minute),
 	}
-	_, err := dbpg.Query(fmt.Sprintf("update wb_auth_session set exptime='%v' where sessname='%s';", time.Now().Unix(), sess))
+
+	dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+	if err != nil {
+		log.Fatalf("PG_INIT::Open() error: %v\n", err)
+	}
+
+	defer dbpg.Close()
+
+	_, err = dbpg.Query(fmt.Sprintf("update wb_auth_session set exptime='%v' where sessname='%s';", time.Now().Unix(), sess))
 	if err != nil {
 		log.Printf("PG::Query() Update session error: %v\n", err)
 		return "error"
@@ -188,6 +216,14 @@ func CheckUserSession(r *http.Request, w http.ResponseWriter) (string, int) {
 
 	cookie, _ := r.Cookie(COOKIE_ID)
 	if cookie != nil {
+
+		dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+		if err != nil {
+			log.Fatalf("PG_INIT::Open() error: %v\n", err)
+		}
+
+		defer dbpg.Close()
+
 		rows, err := dbpg.Query(fmt.Sprintf("select username,exptime from wb_auth_session where sessname='%s';", cookie.Value))
 		if err != nil {
 			log.Printf("PG::Query() Select session error: %v\n", err)
@@ -230,9 +266,17 @@ func CheckUserSession(r *http.Request, w http.ResponseWriter) (string, int) {
 }
 
 func RemoveUserSession(r *http.Request) {
+
 	cookie, _ := r.Cookie(COOKIE_ID)
 	if cookie != nil {
-		_, err := dbpg.Query(fmt.Sprintf("delete from wb_auth_session where sessname='%s';", cookie.Value))
+		dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+		if err != nil {
+			log.Fatalf("PG_INIT::Open() error: %v\n", err)
+		}
+
+		defer dbpg.Close()
+
+		_, err = dbpg.Query(fmt.Sprintf("delete from wb_auth_session where sessname='%s';", cookie.Value))
 		if err != nil {
 			log.Printf("PG::Query() Delete session error: %v\n", err)
 		}

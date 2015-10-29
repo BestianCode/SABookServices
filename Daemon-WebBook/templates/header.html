@@ -2,7 +2,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 	<head>
-		<META http-equiv=Content-Type content="text/html; charset=koi8-r">
+		<META http-equiv=Content-Type content="text/html; charset=utf-8">
 		<meta charset="utf-8">
 		<meta http-equiv="Cache-Control" Content="no-cache">
 		<meta http-equiv="Pragma" Content="no-cache">
@@ -11,70 +11,25 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title>{{ .Pagetitle }}</title>
 		<link href="/images/phone.png" rel="shortcut icon">
-        <link href="/css/first.css" rel="stylesheet">
-<!--        <link href="/css/popup.css" rel="stylesheet">-->
-		<SCRIPT LANGUAGE="JavaScript">
-		<!-- Begin
-		function checkPassword(form) {
-			pw1 = form.password_x1.value;
-			pw2 = form.password_x2.value;
-
-			if (pw1 != pw2) {
-				alert("Введенные пароли не совпадают!")
-				return false;
-			}
-			if (pw1.length<5) {
-				alert("Пароль не должен быть короче 5 символов!")
-				return false;
-			}
-
-			return true;
-		}
-		function checkPasswordAndLogin(form) {
-			pw1 = form.password_x1.value;
-			pw2 = form.password_x2.value;
-			login = form.login.value;
-
-			if (pw1 != pw2) {
-				alert("Введенные пароли не совпадают!")
-				return false;
-			}
-			if (pw1.length<5) {
-				alert("Пароль не должен быть короче 5 символов!")
-				return false;
-			}
-			if (login.length<5) {
-				alert("Логин не должен быть короче 5 символов!")
-				return false;
-			}
-
-			login_cut = login.replace(/[A-Za-z0-9\.\_\-\@]/g, "")
-			if (login_cut.length>0) {
-				alert("Логин может содержать большие и маленькие латинские буквы, арабские цифры и символы: . _ @")
-
-				return false;
-			}
-
-			return true;
-		}
-		function checkDelete(form) {
-			check_del = form.check_del.value;
-
-			if (check_del != "удалить нах") {
-				alert("Введите правильно то, что просят...")
-				return false;
-			}
-			return true;
-		}
-		// End -->
-		</script>
+		<link href="/css/first.css" rel="stylesheet">
+	{{if .TREEOn }}
+		<link href="/css/tree.css" rel="stylesheet">
+		<script src="/js/jquery.min.js" type="text/javascript"></script>
+		<script src="/js/tree.js" type="text/javascript"></script>
+	{{ end }}
+		<script src="/js/admin.js" type="text/javascript"></script>
 	</head>
 	<body>
 	<div id="body">
+	{{if .TREEOn }}
+	 <table bgcolor="{{ .FRColor }}">
+	 <tr><td>
+	 <table bgcolor="{{ .BGColor }}">
+	{{ else }}
 	 <table width="900" bgcolor="{{ .FRColor }}">
 	 <tr><td>
 	 <table width="900" bgcolor="{{ .BGColor }}">
-<!--	  <tr><td width=2%>&nbsp;</td><td>&nbsp;</td><td width=2%>&nbsp;</td></tr>
--->	   <tr><td width=5%>&nbsp;</td><td align=left valign=top>
+	 {{ end }}
+	   <tr><td width=5%>&nbsp;</td><td align=left valign=top>
 		<table width="100%">
 {{ end }}

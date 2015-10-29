@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	//	"os/exec"
+	//"os/exec"
 	"crypto/md5"
 	"encoding/hex"
 	"log"
@@ -14,7 +14,7 @@ import (
 	"database/sql"
 
 	// PostgreSQL
-	//_ "github.com/lib/pq"
+	_ "github.com/lib/pq"
 
 	// MySQL
 	//_ "github.com/go-sql-driver/mysql"
@@ -30,7 +30,7 @@ func main() {
 
 	const (
 		pName = string("SABook CardDAVMaker")
-		pVer  = string("4 2015.10.19.02.00")
+		pVer  = string("4 2015.10.29.02.00")
 	)
 	/*
 		type userInfo struct {
@@ -44,19 +44,19 @@ func main() {
 			uPhExt  []string
 		}
 	*/
-	type userMap struct {
+	/*type userMap struct {
 		uName string
 		uPass string
 		uDN   []string
-	}
+	}*/
 
 	var (
-		userList = []userMap{
-			userMap{"smirnov_oa", "123", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise", "ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}},
-			userMap{"trifonov_av", "12345", []string{"ou=Sl IT,ou=AUP,ou=TsG,ou=Quadra,o=Enterprise", "ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
-			userMap{"bugrov_dg", "1234", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
-			userMap{"ivanov_da", "12345678", []string{"ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}}}
-
+		/*userList = []userMap{
+		userMap{"smirnov_oa", "123", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise", "ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}},
+		userMap{"trifonov_av", "12345", []string{"ou=Sl IT,ou=AUP,ou=TsG,ou=Quadra,o=Enterprise", "ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
+		userMap{"bugrov_dg", "1234", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
+		userMap{"ivanov_da", "12345678", []string{"ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}}}
+		*/
 		ldapServer = string("asterisk.tula.domino:389")
 		ldapUser   = string("")
 		ldapPass   = string("")
@@ -66,7 +66,7 @@ func main() {
 		//ldapVCard  = []string{"FN", "ORG", "ROLE", "EMAIL;WORK", "TEL;TYPE=VOICE;TYPE=PREF", "TEL;CELL", "TEL;WORK"}
 		//ldapAttrForSum = string("entryDN")
 
-		realm = string("SABookDAV")
+		//realm = string("SABookDAV")
 
 		queryx string
 
@@ -76,6 +76,7 @@ func main() {
 		idxCards = int(1)
 
 		mySQL_DN = string("tcp:mysql.domino:3306*cdav/cdav/dav69admin")
+		pgSQL_DN = string("host=pgsql.tula.domino user=asterisk password=asterisksk69 dbname=sabook sslmode=disable")
 		//mySQL_DN     = string("cdav:dav69admin@tcp(mysql.domino:3306)/cdav")
 		mySQL_InitDB = string(`
 CREATE TABLE IF NOT EXISTS addressbooks (
@@ -235,13 +236,13 @@ delete x,y from
 					(select id, username from users) as subq
 						where a.id=subq.id and subq.username=REPLACE(a.uri, 'principals/', '')) as c);
 `, `
-insert into users (username,digesta1)
-	select a.username, a.digesta1 from z_cache_users as a
+insert into users (id,username,digesta1)
+	select a.id, a.username, a.digesta1 from z_cache_users as a
 		where a.username not in (select b.username from users as b where b.username=a.username and
 			b.digesta1=a.digesta1);
 `, `
 insert into principals (id,uri)
-	select subq.id, a.uri from (select id,username from users) as subq, z_cache_principals as a
+	select a.id, a.uri from (select id,username from users) as subq, z_cache_principals as a
 		where a.uri not in (select b.uri from principals as b where b.uri=a.uri) and
 			subq.username=REPLACE(a.uri, 'principals/', '');
 `, `
@@ -286,11 +287,19 @@ insert into cards (addressbookid, carddata, uri)
 
 	db, err := sql.Open("mymysql", mySQL_DN)
 	if err != nil {
-		log.Printf("PG::Open() error: %v\n", err)
+		log.Printf("MySQL::Open() error: %v\n", err)
 		return
 	}
 
 	defer db.Close()
+
+	dbpg, err := sql.Open("postgres", pgSQL_DN)
+	if err != nil {
+		log.Printf("PG::Open() error: %v\n", err)
+		return
+	}
+
+	defer dbpg.Close()
 
 	log.Printf("\tInitialize DB...\n")
 	rows, err := db.Query(mySQL_InitDB)
@@ -300,15 +309,28 @@ insert into cards (addressbookid, carddata, uri)
 	}
 	log.Printf("\t\tComplete!\n")
 
-	time.Sleep(time.Duration(2) * time.Second)
+	time.Sleep(10 * time.Second)
 
 	x := make(map[string]string, len(ldapAttr))
 
-	password := ""
+	//password := ""
 	multiCount := 0
 	log.Printf("\tCreate cacheDB from LDAP...\n")
-	for i := 0; i < len(userList); i++ {
-		queryx = fmt.Sprintf("select id from users where username='%s';", userList[i].uName)
+
+	pgrows1, err := dbpg.Query("select id, login, password from aaa_logins where id in (select userid from aaa_dns) order by login;")
+	if err != nil {
+		log.Printf("01 PG::Query() error: %v\n", err)
+		return
+	}
+
+	usID := 0
+	usName := ""
+	usPass := ""
+	for pgrows1.Next() {
+		//for i := 0; i < len(userList); i++ {
+
+		pgrows1.Scan(&usID, &usName, &usPass)
+		queryx = fmt.Sprintf("select id from users where username='%s';", usName)
 		//log.Printf("%s\n", queryx)
 		rows, err = db.Query(queryx)
 		if err != nil {
@@ -341,13 +363,13 @@ insert into cards (addressbookid, carddata, uri)
 
 		//fmt.Printf("%d\n", userIDGet)
 
-		z := md5.New()
-		z.Write([]byte(fmt.Sprintf("%s:%s:%s", userList[i].uName, realm, userList[i].uPass)))
-		password = hex.EncodeToString(z.Sum(nil))
+		//z := md5.New()
+		//z.Write([]byte(fmt.Sprintf("%s:%s:%s", userList[i].uName, realm, userList[i].uPass)))
+		//password = hex.EncodeToString(z.Sum(nil))
 
-		queryx = fmt.Sprintf("INSERT INTO z_cache_users (id, username, digesta1)\n\tVALUES (%d, '%s', '%s');", idxUsers, userList[i].uName, password)
-		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, idxUsers, userList[i].uName)
-		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, idxUsers, userList[i].uName)
+		queryx = fmt.Sprintf("INSERT INTO z_cache_users (id, username, digesta1)\n\tVALUES (%d, '%s', '%s');", usID, usName, usPass)
+		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, usID, usName)
+		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, usID, usName)
 		//log.Printf("%s\n", queryx)
 		_, err = db.Query(queryx)
 		if err != nil {
@@ -356,11 +378,22 @@ insert into cards (addressbookid, carddata, uri)
 			return
 		}
 
-		for j := 0; j < len(userList[i].uDN); j++ {
+		pgrows2, err := dbpg.Query(fmt.Sprintf("select dn from aaa_dns where userid=%d;", usID))
+		if err != nil {
+			log.Printf("02 PG::Query() error: %v\n", err)
+			return
+		}
 
-			log.Printf("\t\t\t%3d/%s - %s\n", idxUsers, userList[i].uName, userList[i].uDN[j])
+		usDN := ""
+		//for j := 0; j < len(usDN); j++ {
+		for pgrows2.Next() {
 
-			search := ldap.NewSearchRequest(userList[i].uDN[j], 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldapAttr, nil)
+			pgrows2.Scan(&usDN)
+			//queryx = fmt.Sprintf("select id from users where username='%s';", usName)
+
+			log.Printf("\t\t\t%3d/%s - %s\n", usID, usName, usDN)
+
+			search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldapAttr, nil)
 
 			sr, err := l.Search(search)
 			if err != nil {
@@ -395,7 +428,7 @@ insert into cards (addressbookid, carddata, uri)
 					y = fmt.Sprintf("%sEND:VCARD\n", y)
 					//fmt.Printf("%s\n\t%s.vcf\n\n", y, uid)
 
-					queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_cards (id, addressbookid, carddata, uri, lastmodified)\n\tVALUES (%d, %d, '%s', '%s.vcf', NULL);", queryx, idxCards, idxUsers, y, uid)
+					queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_cards (id, addressbookid, carddata, uri, lastmodified)\n\tVALUES (%d, %d, '%s', '%s.vcf', NULL);", queryx, idxCards, usID, y, uid)
 					if multiCount > multiInsert {
 						//log.Printf("%s\n", queryx)
 						_, err = db.Query(queryx)

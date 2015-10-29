@@ -1,7 +1,7 @@
 package SABDefine
 
 var (
-	LDAP_Tables_am = int(11)
+	LDAP_Tables_am = int(12)
 
 	LDAP_Scheme_create = string(`
 
@@ -24,6 +24,11 @@ CREATE TABLE IF NOT EXISTS aaa_dns (
     dn character varying(255) NOT NULL,
     PRIMARY KEY (id),
     CONSTRAINT "aaa_dns_userid_dn_key" UNIQUE (userid, dn)
+);
+
+CREATE TABLE IF NOT EXISTS aaa_dav_ntu (
+    userid integer PRIMARY KEY,
+    updtime integer
 );
 
 CREATE SEQUENCE aaa_logins_id_seq

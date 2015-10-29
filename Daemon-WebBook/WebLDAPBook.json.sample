@@ -37,8 +37,6 @@
 					["pager","PhoneExt"]
 				],
 
-	"WLB_SQLite_DB":	"./WebLDAPBook.sqlite3",
-
 	"LOG_File":			"/var/log/ABook/WebLDAPBook.log",
 	"PID_File":			"/var/run/WebLDAPBook.pid"
 }

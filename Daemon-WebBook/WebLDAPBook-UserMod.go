@@ -17,11 +17,9 @@ import (
 	//LDAP
 	//"github.com/go-ldap/ldap"
 
-	//"database/sql"
+	"database/sql"
 	// PostgreSQL
-	//_ "github.com/lib/pq"
-	// SQLite
-	//_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 
 	//"github.com/BestianRU/SABookServices/SABModules"
 	//	"github.com/kabukky/httpscerts"
@@ -56,6 +54,13 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 	//mt.Printf("%s %s %s %s %s %s %s\n", uid, action, login, password_x1, password_x2, fullname, role)
 
 	if len(uid) > 10 {
+
+		dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+		if err != nil {
+			log.Fatalf("PG_INIT::Open() error: %v\n", err)
+		}
+
+		defer dbpg.Close()
 
 		queryx := fmt.Sprintf("select fullname from ldapx_persons where uid='%s';", uid)
 		rows, err := dbpg.Query(queryx)
