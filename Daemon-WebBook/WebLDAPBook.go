@@ -50,7 +50,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("4 alpha 2015.10.30.01.00")
+	pVer      = string("4 alpha 2015.10.30.21.00")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
 	roleAdmin = 100
@@ -428,7 +428,7 @@ func davDNHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		queryx = fmt.Sprintf("insert into aaa_dav_ntu (userid,updtime) select %d,%v where not exists (select userid from aaa_dav_ntu); update aaa_dav_ntu set updtime=%v where userid=%d;", xId, time.Now().Unix(), time.Now().Unix(), xId)
+		queryx = fmt.Sprintf("insert into aaa_dav_ntu (userid,updtime) select %d,%v where not exists (select userid from aaa_dav_ntu where userid=%d); update aaa_dav_ntu set updtime=%v where userid=%d;", xId, time.Now().Unix(), xId, time.Now().Unix(), xId)
 		//fmt.Printf("%s\n", queryx)
 		_, err = dbpg.Query(queryx)
 		if err != nil {

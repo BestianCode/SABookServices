@@ -1,0 +1,24 @@
+{
+	"PG_DSN":		"host=pgsql.host user=asterisk password=paSSw0rD dbname=asterisk-pbook sslmode=disable",
+	"MY_DSN":		"tcp:mysql.host:3306*davbase/davuser/davpassword",
+
+	"LDAP_URL":			[
+					["URL1:389", "", "", "", "(objectClass=inetOrgPerson)"],
+					["URL2:389", "", "", "", "(objectClass=inetOrgPerson)"]
+				],
+
+	"WLB_LDAP_ATTR":	[
+					["displayName","FN"],
+					["businessCategory","ROLE"],
+					["mail","EMAIL;WORK"],
+					["telephoneNumber","TEL;TYPE=VOICE;TYPE=PREF"],
+					["mobile","TEL;CELL"],
+					["pager","TEL;WORK"]
+				],
+
+	"Sleep_Time":	60,
+
+	"LOG_File":		"/var/log/ABook/CardDAVMaker.log",
+	"PID_File":		"/var/run/CardDAVMaker.pid"
+}
+

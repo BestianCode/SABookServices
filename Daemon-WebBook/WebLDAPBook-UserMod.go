@@ -1,32 +1,17 @@
 package main
 
 import (
-	//"crypto/md5"
-	//"crypto/rand"
-	//"encoding/hex"
 	"fmt"
-	//"html/template"
 	"log"
 	"net/http"
-	//"strconv"
-	//"strings"
-	//"syscall"
-	//"os"
-	//"time"
-
-	//LDAP
-	//"github.com/go-ldap/ldap"
+	"time"
 
 	"database/sql"
 	// PostgreSQL
 	_ "github.com/lib/pq"
 
 	//"github.com/BestianRU/SABookServices/SABModules"
-	//	"github.com/kabukky/httpscerts"
-	//	"github.com/gavruk/go-blog-example/models"
 )
-
-//insert into aaa_dns (userid,dn) select id, 'ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise' from aaa_logins where uid='\x5b31353720313330203020333320393020323033203233342031303220313720323236203935203230372037392031322038203132375d';
 
 func modifyHandler(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -39,6 +24,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		role        string
 		rolen       int
 		uFullname   string
+		xId         int
 	)
 
 	uid = r.FormValue("uid")
@@ -72,6 +58,16 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		rows.Next()
 		rows.Scan(&uFullname)
 
+		queryx = fmt.Sprintf("select id from aaa_logins where uid='%s';", uid)
+		rows, err = dbpg.Query(queryx)
+		if err != nil {
+			log.Printf("%s\n", queryx)
+			log.Printf("PG::Query() Change password: %v\n", err)
+			return
+		}
+		rows.Next()
+		rows.Scan(&xId)
+
 		switch action {
 		case "change_password":
 			if len(password_x1) > 4 && len(password_x2) > 4 && password_x1 == password_x2 && len(login) > 4 {
@@ -83,6 +79,14 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 				log.Printf("%s AAA Change password for: %s", remIPClient, uFullname)
+				queryx = fmt.Sprintf("insert into aaa_dav_ntu (userid,updtime) select %d,%v where not exists (select userid from aaa_dav_ntu where userid=%d); update aaa_dav_ntu set updtime=%v where userid=%d;", xId, time.Now().Unix(), xId, time.Now().Unix(), xId)
+				//fmt.Printf("%s\n", queryx)
+				_, err = dbpg.Query(queryx)
+				if err != nil {
+					log.Printf("%s\n", queryx)
+					log.Printf("PG::Query() Update NTU table: %v\n", err)
+					return
+				}
 			}
 		case "create_user":
 			if len(password_x1) > 4 && len(password_x2) > 4 && password_x1 == password_x2 && len(login) > 4 && len(fullname) > 4 && len(role) > 0 {
@@ -136,98 +140,17 @@ delete from aaa_logins where uid='%s';
 				return
 			}
 			log.Printf("%s AAA Delete SAB account for: %s", remIPClient, uFullname)
-
+			queryx = fmt.Sprintf("insert into aaa_dav_ntu (userid,updtime) select %d,%v where not exists (select userid from aaa_dav_ntu where userid=%d); update aaa_dav_ntu set updtime=%v where userid=%d;", xId, time.Now().Unix(), xId, time.Now().Unix(), xId)
+			//fmt.Printf("%s\n", queryx)
+			_, err = dbpg.Query(queryx)
+			if err != nil {
+				log.Printf("%s\n", queryx)
+				log.Printf("PG::Query() Update NTU table: %v\n", err)
+				return
+			}
 		}
 
 	}
 
 	http.Redirect(w, r, r.Referer(), http.StatusMovedPermanently)
-
-	/*
-		RedirectDN := r.FormValue("RPR")
-
-		if len(RedirectDN) < 1 {
-			RedirectDN = "/"
-		} else {
-			RedirectDN = strings.Replace(RedirectDN, "'", "", -1)
-		}
-
-		if r.FormValue("go") == "unlogin" {
-			RemoveUserSession(r)
-			http.Redirect(w, r, RedirectDN, http.StatusMovedPermanently)
-		}
-
-		remIPClient := getIPAddress(r)
-
-		SABModules.Log_ON(&rconf)
-		defer SABModules.Log_OFF()
-
-		if len(username) < 2 || len(password) < 2 {
-
-			log.Printf("%s AAA Get login form...", remIPClient)
-
-			t, err := template.ParseFiles("templates/header.html")
-			if err != nil {
-				fmt.Fprintf(w, err.Error())
-				log.Println(err.Error())
-				return
-			}
-
-			t.ExecuteTemplate(w, "header", template.FuncMap{"Pagetitle": rconf.WLB_HTML_Title, "FRColor": "#FF0000", "BGColor": "#FFEEEE"})
-
-			t, err = template.ParseFiles("templates/search.html")
-			if err != nil {
-				fmt.Fprintf(w, err.Error())
-				log.Println(err.Error())
-				return
-			}
-
-			t.ExecuteTemplate(w, "search", template.FuncMap{"GoHome": "Yes", "LineColor": "#FFDDDD"})
-
-			t, err = template.ParseFiles("templates/login.html")
-			if err != nil {
-				fmt.Fprintf(w, err.Error())
-				log.Println(err.Error())
-				return
-			}
-
-			t.ExecuteTemplate(w, "login", template.FuncMap{"RedirectDN": RedirectDN})
-
-			t, err = template.ParseFiles("templates/footer.html")
-			if err != nil {
-				fmt.Fprintf(w, err.Error())
-				log.Println(err.Error())
-				return
-			}
-
-			t.ExecuteTemplate(w, "footer", template.FuncMap{"WebBookVersion": pVersion, "xMailBT": rconf.WLB_MailBT, "LineColor": "#FFDDDD"})
-
-		} else {
-			queryx = fmt.Sprintf("select distinct login from aaa_logins where login='%s' and password=md5('%s:%s:%s') limit 1;", username, username, rconf.SABRealm, password)
-			//fmt.Printf("%s\n", queryx)
-			rows, err := dbpg.Query(queryx)
-			if err != nil {
-				log.Printf("PG::Query() Check login and password: %v\n", err)
-				return
-			}
-
-			rows.Next()
-			rows.Scan(&get_login)
-
-			if get_login == username {
-				userID := StoreUserSession(username, w)
-				if userID == "error" {
-					return
-				}
-
-				log.Printf("%s AAA Login enter with username %s (%s)\n", remIPClient, username, userID)
-
-				http.Redirect(w, r, RedirectDN, http.StatusMovedPermanently)
-
-			} else {
-				log.Printf("%s AAA Login ERROR with username %s\n", remIPClient, username)
-				http.Redirect(w, r, "/login", http.StatusMovedPermanently)
-			}
-		}
-	*/
 }

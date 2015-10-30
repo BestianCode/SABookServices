@@ -13,6 +13,7 @@ import (
 
 type Config_STR struct {
 	PG_DSN              string
+	MY_DSN              string
 	AST_SQLite_DB       string
 	AST_CID_Group       string
 	AST_Num_Start       string

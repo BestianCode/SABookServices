@@ -1,14 +1,15 @@
 package main
 
 import (
-	"fmt"
-	//"os/exec"
 	"crypto/md5"
 	"encoding/hex"
+	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"os/signal"
 	"strings"
-	//"regexp"
-	//"net"
+	"syscall"
 	"time"
 
 	"database/sql"
@@ -17,68 +18,40 @@ import (
 	_ "github.com/lib/pq"
 
 	// MySQL
-	//_ "github.com/go-sql-driver/mysql"
 	_ "github.com/ziutek/mymysql/godrv"
 
 	// LDAP
 	"github.com/go-ldap/ldap"
 
-	//"github.com/BestianRU/SABookServices/SABModules"
+	"github.com/BestianRU/SABookServices/SABModules"
 )
 
 func main() {
 
 	const (
 		pName = string("SABook CardDAVMaker")
-		pVer  = string("4 2015.10.29.02.00")
+		pVer  = string("4 2015.10.31.01.00")
 	)
-	/*
-		type userInfo struct {
-			uName   string
-			uOrg    string
-			uOU     string
-			uPos    string
-			uMail   []string
-			uPhInt  []string
-			uMobile []string
-			uPhExt  []string
-		}
-	*/
-	/*type userMap struct {
-		uName string
-		uPass string
-		uDN   []string
-	}*/
+
+	type usIDPartList struct {
+		id   int
+		name string
+	}
 
 	var (
-		/*userList = []userMap{
-		userMap{"smirnov_oa", "123", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise", "ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}},
-		userMap{"trifonov_av", "12345", []string{"ou=Sl IT,ou=AUP,ou=TsG,ou=Quadra,o=Enterprise", "ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
-		userMap{"bugrov_dg", "1234", []string{"ou=Upr IT,ou=Obosoblennoe podrazdelenie Quadra - IA,ou=IA Quadra,ou=Quadra,o=Enterprise"}},
-		userMap{"ivanov_da", "12345678", []string{"ou=AUP,ou=TsG,ou=Quadra,o=Enterprise"}}}
-		*/
-		ldapServer = string("asterisk.tula.domino:389")
-		ldapUser   = string("")
-		ldapPass   = string("")
-		ldapAttr   = []string{"displayName", "businessCategory", "mail", "telephoneNumber", "mobile", "pager"}
-		ldapVCard  = []string{"FN", "ROLE", "EMAIL;WORK", "TEL;TYPE=VOICE;TYPE=PREF", "TEL;CELL", "TEL;WORK"}
-		//ldapAttr   = []string{"displayName", "entryDN", "businessCategory", "mail", "telephoneNumber", "mobile", "pager"}
-		//ldapVCard  = []string{"FN", "ORG", "ROLE", "EMAIL;WORK", "TEL;TYPE=VOICE;TYPE=PREF", "TEL;CELL", "TEL;WORK"}
-		//ldapAttrForSum = string("entryDN")
-
-		//realm = string("SABookDAV")
-
-		queryx string
-
-		multiInsert = int(50)
-
-		idxUsers = int(1)
-		idxCards = int(1)
-
-		mySQL_DN = string("tcp:mysql.domino:3306*cdav/cdav/dav69admin")
-		pgSQL_DN = string("host=pgsql.tula.domino user=asterisk password=asterisksk69 dbname=sabook sslmode=disable")
-		//mySQL_DN     = string("cdav:dav69admin@tcp(mysql.domino:3306)/cdav")
-		mySQL_InitDB = string(`
+		ldap_Attr       []string
+		ldap_VCard      []string
+		queryx          string
+		multiInsert     = int(50)
+		idxUsers        = int(1)
+		idxCards        = int(1)
+		def_config_file = string("./CardDAVMaker.json") // Default configuration file
+		def_log_file    = string("./CardDAVMaker.log")  // Default log file
+		def_daemon_mode = string("NO")                  // Default start in foreground
+		rconf           SABModules.Config_STR
+		workMode        = string("FULL")
+		i               int
+		mySQL_InitDB    = string(`
 CREATE TABLE IF NOT EXISTS addressbooks (
   id int(11) unsigned NOT NULL AUTO_INCREMENT,
   principaluri varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
@@ -213,7 +186,7 @@ truncate table z_cache_principals;
 truncate table z_cache_cards;
 truncate table z_cache_addressbooks;
 			`)
-		mySQL_Update = []string{`
+		mySQL_Update_full1 = []string{`
 delete from users where username in 
 	(select * from
 		(select a.username from users as a where a.username not in
@@ -235,7 +208,48 @@ delete x,y from
 				(select * from (select a.id from principals as a,
 					(select id, username from users) as subq
 						where a.id=subq.id and subq.username=REPLACE(a.uri, 'principals/', '')) as c);
+			`}
+
+		mySQL_Update_full2 = []string{`
+delete from cards where uri in
+	(select * from
+		(select a.uri from cards as a where a.uri not in
+			(select b.uri from z_cache_cards as b where b.uri=a.uri and a.addressbookid=b.addressbookid)) as c) or
+	addressbookid not in (select id from users);
+		`}
+
+		mySQL_Update_part1 = []string{`
+delete from users where id=XYZIDXYZ and username in 
+	(select * from
+		(select a.username from users as a where a.id=XYZIDXYZ and a.username not in
+			(select b.username from z_cache_users as b where b.id=XYZIDXYZ and b.username=a.username and b.digesta1=a.digesta1)) as c);
 `, `
+delete from principals where id=XYZIDXYZ and uri in
+	(select * from
+		(select a.uri from principals as a where a.id=XYZIDXYZ and a.uri not in
+			(select b.uri from z_cache_principals as b where a.id=XYZIDXYZ and b.uri=a.uri)) as c);
+`, `
+delete from addressbooks where id=XYZIDXYZ and principaluri in
+	(select * from
+		(select a.principaluri from addressbooks as a where a.id=XYZIDXYZ and a.principaluri not in
+			(select b.principaluri from z_cache_addressbooks as b where b.id=XYZIDXYZ and b.principaluri=a.principaluri)) as c);
+`, `
+delete x,y from
+	principals as x join addressbooks y on x.id=y.id
+			where x.id=XYZIDXYZ and x.id not in
+				(select * from (select a.id from principals as a,
+					(select id, username from users) as subq
+						where a.id=XYZIDXYZ and a.id=subq.id and subq.username=REPLACE(a.uri, 'principals/', '')) as c);
+			`}
+		mySQL_Update_part2 = []string{`
+delete from cards where addressbookid=XYZIDXYZ and uri in
+	(select * from
+		(select a.uri from cards as a where a.addressbookid=XYZIDXYZ and a.uri not in
+			(select b.uri from z_cache_cards as b where b.uri=a.uri and a.addressbookid=b.addressbookid)) as c) or
+	addressbookid not in (select id from users);
+		  `}
+
+		mySQL_Update1 = []string{`
 insert into users (id,username,digesta1)
 	select a.id, a.username, a.digesta1 from z_cache_users as a
 		where a.username not in (select b.username from users as b where b.username=a.username and
@@ -251,286 +265,84 @@ insert into addressbooks (id,principaluri,uri,ctag)
 		where a.principaluri not in
 			(select b.principaluri from addressbooks as b where b.principaluri=a.principaluri) and
 				subq.username=REPLACE(a.principaluri, 'principals/', '');
-`, `
-delete from cards where uri in
-	(select * from
-		(select a.uri from cards as a where a.uri not in
-			(select b.uri from z_cache_cards as b where b.uri=a.uri and a.addressbookid=b.addressbookid)) as c) or
-	addressbookid not in (select id from users);
-`, `
+			`}
+
+		mySQL_Update2 = []string{`
 insert into cards (addressbookid, carddata, uri)
 	select a.addressbookid, a.carddata, a.uri from z_cache_cards as a
 		where a.uri not in
 			(select b.uri from cards as b where a.uri=b.uri and a.addressbookid=b.addressbookid);
-			`}
+		  			`}
 	)
 
-	//truncate table users;
-	//truncate table principals;
-	//truncate table cards;
-	//truncate table addressbooks;
+	fmt.Printf("\n\t%s V%s\n\n", pName, pVer)
 
-	l, err := ldap.Dial("tcp", ldapServer)
-	if err != nil {
-		log.Printf("LDAP::Initialize() error: %v\n", err)
-		return
-	}
+	rconf.LOG_File = def_log_file
 
-	//l.Debug = true
-	defer l.Close()
+	def_config_file, def_daemon_mode = SABModules.ParseCommandLine(def_config_file, def_daemon_mode)
 
-	err = l.Bind(ldapUser, ldapPass)
-	if err != nil {
-		log.Printf("LDAP::Bind() error: %v\n", err)
-		return
-	}
+	log.Printf("%s %s %s", def_config_file, def_daemon_mode, os.Args[0])
 
-	db, err := sql.Open("mymysql", mySQL_DN)
-	if err != nil {
-		log.Printf("MySQL::Open() error: %v\n", err)
-		return
-	}
+	SABModules.ReadConfigFile(def_config_file, &rconf)
 
-	defer db.Close()
+	SABModules.Pid_Check(&rconf)
 
-	dbpg, err := sql.Open("postgres", pgSQL_DN)
-	if err != nil {
-		log.Printf("PG::Open() error: %v\n", err)
-		return
-	}
-
-	defer dbpg.Close()
-
-	log.Printf("\tInitialize DB...\n")
-	rows, err := db.Query(mySQL_InitDB)
-	if err != nil {
-		log.Printf("01 MySQL::Query() error: %v\n", err)
-		return
-	}
-	log.Printf("\t\tComplete!\n")
-
-	time.Sleep(10 * time.Second)
-
-	x := make(map[string]string, len(ldapAttr))
-
-	//password := ""
-	multiCount := 0
-	log.Printf("\tCreate cacheDB from LDAP...\n")
-
-	pgrows1, err := dbpg.Query("select id, login, password from aaa_logins where id in (select userid from aaa_dns) order by login;")
-	if err != nil {
-		log.Printf("01 PG::Query() error: %v\n", err)
-		return
-	}
-
-	usID := 0
-	usName := ""
-	usPass := ""
-	for pgrows1.Next() {
-		//for i := 0; i < len(userList); i++ {
-
-		pgrows1.Scan(&usID, &usName, &usPass)
-		queryx = fmt.Sprintf("select id from users where username='%s';", usName)
-		//log.Printf("%s\n", queryx)
-		rows, err = db.Query(queryx)
-		if err != nil {
-			log.Printf("02 MySQL::Query() error: %v\n", err)
-			log.Printf("%s\n", queryx)
-			return
-		}
-		userIDGet := 0
-		rows.Next()
-		rows.Scan(&userIDGet)
-		if userIDGet > 0 {
-			idxUsers = userIDGet
+	if def_daemon_mode == "YES" {
+		if err := exec.Command(os.Args[0], fmt.Sprintf("-daemon=GO -config=%s &", def_config_file)).Start(); err != nil {
+			log.Fatalf("Fork daemon error: %v", err)
 		} else {
-			queryx = "select id from users order by id desc limit 1;"
-			//log.Printf("%s\n", queryx)
-			rows, err = db.Query(queryx)
-			if err != nil {
-				log.Printf("03 MySQL::Query() error: %v\n", err)
-				log.Printf("%s\n", queryx)
-				return
-			}
-			rows.Next()
-			rows.Scan(&userIDGet)
-
-			if userIDGet > 0 {
-				userIDGet++
-				idxUsers = userIDGet
-			}
-		}
-
-		//fmt.Printf("%d\n", userIDGet)
-
-		//z := md5.New()
-		//z.Write([]byte(fmt.Sprintf("%s:%s:%s", userList[i].uName, realm, userList[i].uPass)))
-		//password = hex.EncodeToString(z.Sum(nil))
-
-		queryx = fmt.Sprintf("INSERT INTO z_cache_users (id, username, digesta1)\n\tVALUES (%d, '%s', '%s');", usID, usName, usPass)
-		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, usID, usName)
-		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, usID, usName)
-		//log.Printf("%s\n", queryx)
-		_, err = db.Query(queryx)
-		if err != nil {
-			log.Printf("03 MySQL::Query() error: %v\n", err)
-			log.Printf("%s\n", queryx)
-			return
-		}
-
-		pgrows2, err := dbpg.Query(fmt.Sprintf("select dn from aaa_dns where userid=%d;", usID))
-		if err != nil {
-			log.Printf("02 PG::Query() error: %v\n", err)
-			return
-		}
-
-		usDN := ""
-		//for j := 0; j < len(usDN); j++ {
-		for pgrows2.Next() {
-
-			pgrows2.Scan(&usDN)
-			//queryx = fmt.Sprintf("select id from users where username='%s';", usName)
-
-			log.Printf("\t\t\t%3d/%s - %s\n", usID, usName, usDN)
-
-			search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, "(objectClass=inetOrgPerson)", ldapAttr, nil)
-
-			sr, err := l.Search(search)
-			if err != nil {
-				log.Printf("LDAP::Search() error: %v\n", err)
-				return
-			}
-
-			queryx = ""
-			if len(sr.Entries) > 0 {
-				for _, entry := range sr.Entries {
-					for k := 0; k < len(ldapAttr); k++ {
-						x[ldapVCard[k]] = ""
-					}
-					for _, attr := range entry.Attributes {
-						for k := 0; k < len(ldapAttr); k++ {
-							if attr.Name == ldapAttr[k] {
-								x[ldapVCard[k]] = strings.Join(attr.Values, ",")
-								x[ldapVCard[k]] = strings.Replace(x[ldapVCard[k]], ",", "\n"+ldapVCard[k]+":", -1)
-							}
-						}
-					}
-					y := fmt.Sprintf("BEGIN:VCARD\n")
-					for k := 0; k < len(ldapAttr); k++ {
-						if x[ldapVCard[k]] != "" {
-							y = fmt.Sprintf("%s%s:%s\n", y, ldapVCard[k], x[ldapVCard[k]])
-						}
-					}
-					z := md5.New()
-					z.Write([]byte(y))
-					uid := hex.EncodeToString(z.Sum(nil))
-					y = fmt.Sprintf("%sUID:%s\n", y, uid)
-					y = fmt.Sprintf("%sEND:VCARD\n", y)
-					//fmt.Printf("%s\n\t%s.vcf\n\n", y, uid)
-
-					queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_cards (id, addressbookid, carddata, uri, lastmodified)\n\tVALUES (%d, %d, '%s', '%s.vcf', NULL);", queryx, idxCards, usID, y, uid)
-					if multiCount > multiInsert {
-						//log.Printf("%s\n", queryx)
-						_, err = db.Query(queryx)
-						if err != nil {
-							log.Printf("MySQL::Query() error: %v\n", err)
-							log.Printf("%s\n", queryx)
-							return
-						}
-						queryx = ""
-						multiCount = 0
-					}
-					multiCount++
-					idxCards++
-
-				}
-			}
-			_, err = db.Query(queryx)
-			if err != nil {
-				log.Printf("MySQL::Query() error: %v\n", err)
-				log.Printf("%s\n", queryx)
-				return
-			}
-			queryx = ""
-			multiCount = 0
-		}
-		idxUsers++
-	}
-	log.Printf("\t\tComplete!\n")
-
-	log.Printf("\tUpdate tables...\n")
-	for i := 0; i < len(mySQL_Update); i++ {
-		log.Printf("\t\t\tstep %d of %d...\n", i, len(mySQL_Update))
-		_, err = db.Query(mySQL_Update[i])
-		if err != nil {
-			log.Printf("MySQL::Query() error: %v\n", err)
-			return
+			log.Printf("Forked!")
+			os.Exit(0)
 		}
 	}
-	log.Printf("\t\tComplete!\n")
 
-	/*
-		var (
-			def_config_file = string("./AsteriskCIDUpdater.json")             // Default configuration file
-			def_log_file    = string("/var/log/ABook/AsteriskCIDUpdater.log") // Default log file
-			def_daemon_mode = string("NO")                                    // Default start in foreground
+	SABModules.Log_ON(&rconf)
+	SABModules.Log_OFF()
 
-			sqlite_key   string
-			sqlite_value string
+	SABModules.Pid_ON(&rconf)
 
-			pg_name  string
-			pg_phone string
-
-			pg_array [100000][3]string
-			sq_array [100000][3]string
-
-			pg_array_len = int(0)
-			sq_array_len = int(0)
-
-			ckl1       = int(0)
-			ckl2       = int(0)
-			ckl_status = int(0)
-
-			ast_cmd string
-
-			rconf SABModules.Config_STR
-
-			sql_mode = int(0)
-
-			query string
-		)
-
-		fmt.Printf("\n\t%s V%s\n\n", pName, pVer)
-
-		rconf.LOG_File = def_log_file
-
-		def_config_file, def_daemon_mode = SABModules.ParseCommandLine(def_config_file, def_daemon_mode)
-
-		//	log.Printf("%s %s %s", def_config_file, def_daemon_mode, os.Args[0])
-
-		SABModules.ReadConfigFile(def_config_file, &rconf)
-
-		sqlite_select := fmt.Sprintf("SELECT key, value FROM astdb where key like '%%%s%%';", rconf.AST_CID_Group)
-		pg_select := fmt.Sprintf("select x.cid_name, y.phone from ldapx_persons x, ldapx_phones y, (select a.phone, count(a.phone) as phone_count from ldapx_phones as a, ldapx_persons as b where a.pers_id=b.uid and b.contract=0 and a.pass=2 and b.lang=1 group by a.phone order by a.phone) as subq where x.uid=y.pers_id and y.pass=2 and x.lang=1 and subq.phone=y.phone and subq.phone_count<2 and y.phone like '%s%%' and x.contract=0 group by x.cid_name, y.phone order by y.phone;", rconf.AST_Num_Start)
-
-		SABModules.Pid_Check(&rconf)
-		SABModules.Pid_ON(&rconf)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt, os.Kill, syscall.SIGTERM)
+	go func() {
+		signalType := <-ch
+		signal.Stop(ch)
 
 		SABModules.Log_ON(&rconf)
 
 		log.Printf(".")
 		log.Printf("..")
 		log.Printf("...")
-		log.Printf("-> %s V%s", pName, pVer)
-		log.Printf("--> Go!")
+		log.Printf("Exit command received. Exiting...")
+		log.Println("Signal type: ", signalType)
+		log.Printf("Bye...")
+		log.Printf("...")
+		log.Printf("..")
+		log.Printf(".")
 
-		db, err := sql.Open("sqlite3", rconf.AST_SQLite_DB)
-		if err != nil {
-			log.Printf("SQLite3::Open() error: %v\n", err)
-			return
-		}
+		SABModules.Log_OFF()
 
-		defer db.Close()
+		SABModules.Pid_OFF(&rconf)
+
+		os.Exit(0)
+	}()
+
+	ldap_Attr = make([]string, len(rconf.WLB_LDAP_ATTR))
+
+	for i = 0; i < len(rconf.WLB_LDAP_ATTR); i++ {
+		ldap_Attr[i] = rconf.WLB_LDAP_ATTR[i][0]
+	}
+
+	ldap_VCard = make([]string, len(rconf.WLB_LDAP_ATTR))
+
+	for i = 0; i < len(rconf.WLB_LDAP_ATTR); i++ {
+		ldap_VCard[i] = rconf.WLB_LDAP_ATTR[i][1]
+	}
+
+	for {
+
+		SABModules.Log_ON(&rconf)
+
+		log.Printf("--> WakeUP!")
 
 		dbpg, err := sql.Open("postgres", rconf.PG_DSN)
 		if err != nil {
@@ -540,187 +352,352 @@ insert into cards (addressbookid, carddata, uri)
 
 		defer dbpg.Close()
 
-		dbast, err := net.Dial("tcp", fmt.Sprintf("%s:%d", rconf.AST_ARI_Host, rconf.AST_ARI_Port))
+		pgrows1, err := dbpg.Query("select count(userid) from aaa_dav_ntu")
 		if err != nil {
-			log.Printf(".")
-			log.Printf("Asterisk ARI::Dial() error: %v", err)
-			log.Printf("\tWorking in SQL SQLite mode!")
-			log.Printf(".")
-			sql_mode = 1
-		}
-
-		if sql_mode == 0 {
-			defer dbast.Close()
-		}
-
-		ast_gami := gami.NewAsterisk(&dbast, nil)
-		ast_get := make(chan gami.Message, 10000)
-
-		if sql_mode == 0 {
-			err = ast_gami.Login(rconf.AST_ARI_User, rconf.AST_ARI_Pass)
-			if err != nil {
-				log.Printf("Asterisk ARI::Login() error: %v\n", err)
-				return
-			}
-		}
-
-		rows, err := db.Query(sqlite_select)
-		if err != nil {
-			log.Printf("SQLite3::Query() error: %v\n", err)
+			log.Printf("01 PG::Query() error: %v\n", err)
 			return
 		}
 
-		for rows.Next() {
+		pgrows1.Next()
+		pgrows1.Scan(&i)
 
-			err = rows.Scan(&sqlite_key, &sqlite_value)
+		if i > 0 {
+
+			l, err := ldap.Dial("tcp", rconf.LDAP_URL[0][0])
 			if err != nil {
-				log.Printf("rows.Scan error: %v\n", err)
+				log.Printf("LDAP::Initialize() error: %v\n", err)
 				return
 			}
 
-			sq_array[sq_array_len][0] = sqlite_key
-			sq_array[sq_array_len][1] = sqlite_value
-			sq_array[sq_array_len][2] = SABModules.PhoneMutation(sqlite_key)
-			sq_array_len++
+			//l.Debug = true
+			defer l.Close()
 
-		}
-
-		rows, err = dbpg.Query(pg_select)
-		if err != nil {
-			log.Printf("PG::Query() error: %v\n", err)
-			return
-		}
-
-		pg_array_len = 0
-		for rows.Next() {
-
-			err = rows.Scan(&pg_name, &pg_phone)
+			err = l.Bind(rconf.LDAP_URL[0][1], rconf.LDAP_URL[0][2])
 			if err != nil {
-				log.Printf("rows.Scan error: %v\n", err)
+				log.Printf("LDAP::Bind() error: %v\n", err)
 				return
 			}
 
-			pg_array[pg_array_len][0] = fmt.Sprintf("/%s/%s", rconf.AST_CID_Group, pg_phone)
-			pg_array[pg_array_len][1] = pg_name
-			pg_array[pg_array_len][2] = SABModules.PhoneMutation(pg_phone)
-			pg_array_len++
-
-		}
-
-		for ckl1 = 0; ckl1 < sq_array_len; ckl1++ {
-			ckl_status = 0
-			for ckl2 = 0; ckl2 < pg_array_len; ckl2++ {
-				if sq_array[ckl1][0] == pg_array[ckl2][0] && sq_array[ckl1][1] == pg_array[ckl2][1] {
-					ckl_status = 1
-					break
-				}
+			db, err := sql.Open("mymysql", rconf.MY_DSN)
+			if err != nil {
+				log.Printf("MySQL::Open() error: %v\n", err)
+				return
 			}
-			if ckl_status == 0 {
-				if sql_mode == 0 {
-					ast_cmd = fmt.Sprintf("database del %s %s", rconf.AST_CID_Group, sq_array[ckl1][2])
-					log.Printf("\t- %s\n", ast_cmd)
 
-					ast_cb := func(m gami.Message) {
-						ast_get <- m
-					}
+			defer db.Close()
 
-					err = ast_gami.Command(ast_cmd, &ast_cb)
-					if err != nil {
-						log.Printf("Asterisk ARI::Command() error: %v\n", err)
-						return
-					}
+			log.Printf("\tInitialize DB...\n")
+			rows, err := db.Query(mySQL_InitDB)
+			if err != nil {
+				log.Printf("01 MySQL::Query() error: %v\n", err)
+				return
+			}
+			log.Printf("\t\tComplete!\n")
 
-					for x1, x2 := range <-ast_get {
-						if x1 == "ActionID" || x1 == "CmdData" || x1 == "Usage" {
-							log.Printf("\t\t\t%s\n", x2)
-						}
-					}
+			time.Sleep(10 * time.Second)
+
+			x := make(map[string]string, len(ldap_Attr))
+
+			//password := ""
+			multiCount := 0
+			log.Printf("\tCreate cacheDB from LDAP...\n")
+
+			time_now := time.Now().Unix()
+			time_get := 0
+
+			pgrows1, err := dbpg.Query("select updtime from aaa_dav_ntu where userid=0;")
+			if err != nil {
+				log.Printf("01 PG::Query() error: %v\n", err)
+				return
+			}
+
+			pgrows1.Next()
+			pgrows1.Scan(&time_get)
+
+			if time_get > 0 {
+				pgrows1, err = dbpg.Query("select x.id, x.login, x.password from aaa_logins as x where x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+				if err != nil {
+					log.Printf("03 PG::Query() error: %v\n", err)
+					return
+				}
+				workMode = "FULL"
+			} else {
+				pgrows1, err = dbpg.Query("select x.id, x.login, x.password from aaa_logins as x, aaa_dav_ntu as y where x.id=y.userid and x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+				if err != nil {
+					log.Printf("04 PG::Query() error: %v\n", err)
+					return
+				}
+				workMode = "PART"
+			}
+
+			usID := 0
+			usName := ""
+			usPass := ""
+			usIDArray := make([]usIDPartList, 0)
+			for pgrows1.Next() {
+				//for i := 0; i < len(userList); i++ {
+
+				pgrows1.Scan(&usID, &usName, &usPass)
+				usIDArray = append(usIDArray, usIDPartList{id: usID, name: usName})
+				queryx = fmt.Sprintf("select id from users where username='%s';", usName)
+				//log.Printf("%s\n", queryx)
+				rows, err = db.Query(queryx)
+				if err != nil {
+					log.Printf("02 MySQL::Query() error: %v\n", err)
+					log.Printf("%s\n", queryx)
+					return
+				}
+				userIDGet := 0
+				rows.Next()
+				rows.Scan(&userIDGet)
+				if userIDGet > 0 {
+					idxUsers = userIDGet
 				} else {
-					query = fmt.Sprintf("delete from astdb where key='%s';", sq_array[ckl1][0])
-					log.Printf("\t- %s\n", query)
-					_, err := db.Exec(query)
+					queryx = "select id from users order by id desc limit 1;"
+					//log.Printf("%s\n", queryx)
+					rows, err = db.Query(queryx)
 					if err != nil {
-						log.Printf("SQLite3::Query() DEL error: %v\n", err)
+						log.Printf("03 MySQL::Query() error: %v\n", err)
+						log.Printf("%s\n", queryx)
 						return
 					}
-				}
-			}
-		}
+					rows.Next()
+					rows.Scan(&userIDGet)
 
-		for ckl1 = 0; ckl1 < pg_array_len; ckl1++ {
-			ckl_status = 0
-			for ckl2 = 0; ckl2 < sq_array_len; ckl2++ {
-				if pg_array[ckl1][0] == sq_array[ckl2][0] && pg_array[ckl1][1] == sq_array[ckl2][1] {
-					ckl_status = 1
-					break
-				}
-			}
-			if ckl_status == 0 {
-
-				if sql_mode == 0 {
-					ast_cmd = fmt.Sprintf("database del %s %s", rconf.AST_CID_Group, pg_array[ckl1][2])
-					log.Printf("\t- %s\n", ast_cmd)
-
-					ast_cb := func(m gami.Message) {
-						ast_get <- m
+					if userIDGet > 0 {
+						userIDGet++
+						idxUsers = userIDGet
 					}
+				}
 
-					err = ast_gami.Command(ast_cmd, &ast_cb)
+				//fmt.Printf("%d\n", userIDGet)
+
+				//z := md5.New()
+				//z.Write([]byte(fmt.Sprintf("%s:%s:%s", userList[i].uName, realm, userList[i].uPass)))
+				//password = hex.EncodeToString(z.Sum(nil))
+
+				queryx = fmt.Sprintf("INSERT INTO z_cache_users (id, username, digesta1)\n\tVALUES (%d, '%s', '%s');", usID, usName, usPass)
+				queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, usID, usName)
+				queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, usID, usName)
+				//log.Printf("%s\n", queryx)
+				_, err = db.Query(queryx)
+				if err != nil {
+					log.Printf("03 MySQL::Query() error: %v\n", err)
+					log.Printf("%s\n", queryx)
+					return
+				}
+
+				pgrows2, err := dbpg.Query(fmt.Sprintf("select dn from aaa_dns where userid=%d;", usID))
+				if err != nil {
+					log.Printf("02 PG::Query() error: %v\n", err)
+					return
+				}
+
+				usDN := ""
+				//for j := 0; j < len(usDN); j++ {
+				for pgrows2.Next() {
+
+					pgrows2.Scan(&usDN)
+					//queryx = fmt.Sprintf("select id from users where username='%s';", usName)
+
+					log.Printf("\t\t\t%3d/%s - %s\n", usID, usName, usDN)
+
+					//log.Printf("%s|||%s|||%s\n", usDN, rconf.LDAP_URL[0][4], ldap_Attr)
+
+					search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, rconf.LDAP_URL[0][4], ldap_Attr, nil)
+
+					sr, err := l.Search(search)
 					if err != nil {
-						log.Printf("Asterisk ARI::Command() error: %v\n", err)
+						log.Printf("LDAP::Search() error: %v\n", err)
 						return
 					}
 
-					for x1, x2 := range <-ast_get {
-						if x1 == "ActionID" || x1 == "CmdData" || x1 == "Usage" {
-							log.Printf("\t\t\t%s\n", x2)
+					queryx = ""
+					if len(sr.Entries) > 0 {
+						for _, entry := range sr.Entries {
+							for k := 0; k < len(ldap_Attr); k++ {
+								x[ldap_VCard[k]] = ""
+							}
+							for _, attr := range entry.Attributes {
+								for k := 0; k < len(ldap_Attr); k++ {
+									if attr.Name == ldap_Attr[k] {
+										x[ldap_VCard[k]] = strings.Join(attr.Values, ",")
+										x[ldap_VCard[k]] = strings.Replace(x[ldap_VCard[k]], ",", "\n"+ldap_VCard[k]+":", -1)
+									}
+								}
+							}
+							y := fmt.Sprintf("BEGIN:VCARD\n")
+							for k := 0; k < len(ldap_Attr); k++ {
+								if x[ldap_VCard[k]] != "" {
+									if ldap_VCard[k] == "FN" {
+										fn_split := strings.Split(x[ldap_VCard[k]], " ")
+										fn_nofam := strings.Replace(x[ldap_VCard[k]], fn_split[0], "", -1)
+										fn_nofam = strings.Trim(fn_nofam, " ")
+										y = fmt.Sprintf("%s%s:%s %s\n", y, ldap_VCard[k], fn_nofam, fn_split[0])
+										//fmt.Printf("%s%s:%s %s\n", y, ldap_VCard[k], fn_nofam, fn_split[0])
+									} else {
+										y = fmt.Sprintf("%s%s:%s\n", y, ldap_VCard[k], x[ldap_VCard[k]])
+									}
+								}
+							}
+							z := md5.New()
+							z.Write([]byte(y))
+							uid := hex.EncodeToString(z.Sum(nil))
+							y = fmt.Sprintf("%sUID:%s\n", y, uid)
+							y = fmt.Sprintf("%sEND:VCARD\n", y)
+							//fmt.Printf("%s\n\t%s.vcf\n\n", y, uid)
+
+							queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_cards (id, addressbookid, carddata, uri, lastmodified)\n\tVALUES (%d, %d, '%s', '%s.vcf', NULL);", queryx, idxCards, usID, y, uid)
+							if multiCount > multiInsert {
+								//log.Printf("%s\n", queryx)
+								_, err = db.Query(queryx)
+								if err != nil {
+									log.Printf("MySQL::Query() error: %v\n", err)
+									log.Printf("%s\n", queryx)
+									return
+								}
+								queryx = ""
+								multiCount = 0
+							}
+							multiCount++
+							idxCards++
+
 						}
 					}
-
-					ast_cmd = fmt.Sprintf("database put %s %s \"%s\"", rconf.AST_CID_Group, pg_array[ckl1][2], pg_array[ckl1][1])
-					log.Printf("\t+ %s\n", ast_cmd)
-
-					ast_cb = func(m gami.Message) {
-						ast_get <- m
-					}
-
-					err = ast_gami.Command(ast_cmd, &ast_cb)
+					_, err = db.Query(queryx)
 					if err != nil {
-						log.Printf("Asterisk ARI::Command() error: %v\n", err)
+						log.Printf("MySQL::Query() error: %v\n", err)
+						log.Printf("%s\n", queryx)
 						return
 					}
+					queryx = ""
+					multiCount = 0
+				}
+				idxUsers++
+			}
 
-					for x1, x2 := range <-ast_get {
-						if x1 == "ActionID" || x1 == "CmdData" || x1 == "Usage" {
-							log.Printf("\t\t\t%s\n", x2)
+			log.Printf("\t\tComplete!\n")
+
+			if workMode == "PART" {
+				log.Printf("\tUpdate tables in PartialUpdate mode...\n")
+				for j := 0; j < len(usIDArray); j++ {
+					log.Printf("\t\t\tUpdate %d/%s...\n", usIDArray[j].id, usIDArray[j].name)
+					for i := 0; i < len(mySQL_Update_part1); i++ {
+						log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update_part1))
+
+						queryx = strings.Replace(mySQL_Update_part1[i], "XYZIDXYZ", fmt.Sprintf("%d", usIDArray[j].id), -1)
+						//log.Printf("%s\n", queryx)
+						_, err = db.Query(queryx)
+						if err != nil {
+							log.Printf("%s\n", queryx)
+							log.Printf("MySQL::Query() error: %v\n", err)
+							return
 						}
+						time.Sleep(2 * time.Second)
 					}
-				} else {
-					query = fmt.Sprintf("delete from astdb where key='%s';", pg_array[ckl1][0])
-					log.Printf("\t- %s\n", query)
-					_, err := db.Exec(query)
-					if err != nil {
-						log.Printf("SQLite3::Query() DEL error: %v\n", err)
-						return
+					for i := 0; i < len(mySQL_Update1); i++ {
+						log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update1))
+						//log.Printf("%s\n", mySQL_Update1[i])
+						_, err = db.Query(mySQL_Update1[i])
+						if err != nil {
+							log.Printf("%s\n", mySQL_Update1[i])
+							log.Printf("MySQL::Query() error: %v\n", err)
+							return
+						}
+						time.Sleep(2 * time.Second)
 					}
+					for i := 0; i < len(mySQL_Update_part2); i++ {
+						log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update_part2))
 
-					query = fmt.Sprintf("insert into astdb (key,value) values ('%s','%s');", pg_array[ckl1][0], pg_array[ckl1][1])
-					log.Printf("\t+ %s\n", query)
-					_, err = db.Exec(query)
+						queryx = strings.Replace(mySQL_Update_part2[i], "XYZIDXYZ", fmt.Sprintf("%d", usIDArray[j].id), -1)
+						//log.Printf("%s\n", queryx)
+						_, err = db.Query(queryx)
+						if err != nil {
+							log.Printf("%s\n", queryx)
+							log.Printf("MySQL::Query() error: %v\n", err)
+							return
+						}
+						time.Sleep(2 * time.Second)
+					}
+					for i := 0; i < len(mySQL_Update2); i++ {
+						log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update2))
+						//log.Printf("%s\n", mySQL_Update2[i])
+						_, err = db.Query(mySQL_Update2[i])
+						if err != nil {
+							log.Printf("%s\n", mySQL_Update2[i])
+							log.Printf("MySQL::Query() error: %v\n", err)
+							return
+						}
+						time.Sleep(2 * time.Second)
+					}
+					time.Sleep(2 * time.Second)
+				}
+			} else {
+				log.Printf("\tUpdate tables...\n")
+				for i := 0; i < len(mySQL_Update_full1); i++ {
+					log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update_full1))
+					_, err = db.Query(mySQL_Update_full1[i])
 					if err != nil {
-						log.Printf("SQLite3::Query() INS error: %v\n", err)
+						log.Printf("%s\n", mySQL_Update_full1[i])
+						log.Printf("MySQL::Query() error: %v\n", err)
 						return
 					}
+					time.Sleep(2 * time.Second)
+				}
+				for i := 0; i < len(mySQL_Update1); i++ {
+					log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update1))
+					_, err = db.Query(mySQL_Update1[i])
+					if err != nil {
+						log.Printf("%s\n", mySQL_Update1[i])
+						log.Printf("MySQL::Query() error: %v\n", err)
+						return
+					}
+					time.Sleep(2 * time.Second)
+				}
+				for i := 0; i < len(mySQL_Update_full2); i++ {
+					log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update_full2))
+					_, err = db.Query(mySQL_Update_full2[i])
+					if err != nil {
+						log.Printf("%s\n", mySQL_Update_full2[i])
+						log.Printf("MySQL::Query() error: %v\n", err)
+						return
+					}
+					time.Sleep(2 * time.Second)
+				}
+				for i := 0; i < len(mySQL_Update2); i++ {
+					log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update2))
+					_, err = db.Query(mySQL_Update2[i])
+					if err != nil {
+						log.Printf("%s\n", mySQL_Update2[i])
+						log.Printf("MySQL::Query() error: %v\n", err)
+						return
+					}
+					time.Sleep(2 * time.Second)
 				}
 			}
-		}
 
-		log.Printf("...")
-		log.Printf("..")
-		log.Printf(".")
+			log.Printf("\t\tComplete!\n")
+
+			log.Printf("\tClean NeedToUpdate table...\n")
+			queryx = fmt.Sprintf("delete from aaa_dav_ntu where userid=0 or updtime<%d;", time_now)
+			//log.Printf("%s\n", queryx)
+			_, err = dbpg.Query(queryx)
+			if err != nil {
+				log.Printf("PG::Query() Clean NTU table error: %v\n", err)
+				return
+			}
+
+			log.Printf("\tComplete!\n")
+
+			l.Close()
+			db.Close()
+		}
+		dbpg.Close()
+
+		log.Printf("----- Sleep for %d sec...", rconf.Sleep_Time)
 
 		SABModules.Log_OFF()
 
-		SABModules.Pid_OFF(&rconf)
-	*/
+		time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
+	}
 }
