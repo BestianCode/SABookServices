@@ -1,14 +1,13 @@
 package SABModules
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
 	"syscall"
-
-	"encoding/json"
 )
 
 type Config_STR struct {
