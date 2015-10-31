@@ -506,6 +506,6 @@ func main() {
 		}
 
 		time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
-		sleepWatch += int(time.Second)
+		sleepWatch += rconf.Sleep_Time
 	}
 }
