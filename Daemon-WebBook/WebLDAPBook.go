@@ -50,7 +50,7 @@ type tList struct {
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("4 alpha 2015.10.30.21.00")
+	pVer      = string("4 alpha 2015.11.01.22.00")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
 	roleAdmin = 100
@@ -58,9 +58,9 @@ const (
 )
 
 var (
-	def_config_file = string("./WebLDAPBook.json")             // Default configuration file
-	def_log_file    = string("/var/log/ABook/WebLDAPBook.log") // Default log file
-	def_daemon_mode = string("NO")                             // Default start in foreground
+	def_config_file = string("./WebLDAPBook.json") // Default configuration file
+	def_log_file    = string("./WebLDAPBook.log")  // Default log file
+	def_daemon_mode = string("NO")                 // Default start in foreground
 	pVersion        string
 	rconf           SABModules.Config_STR
 	ldap_count      = int(0)
