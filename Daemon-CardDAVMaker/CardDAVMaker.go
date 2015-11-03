@@ -5,11 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-	"os"
-	"os/exec"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"database/sql"
@@ -23,42 +19,22 @@ import (
 	// LDAP
 	"github.com/go-ldap/ldap"
 
-	"github.com/BestianRU/SABookServices/SABModules"
+	"github.com/BestianRU/SABModules/SBMConnect"
+	"github.com/BestianRU/SABModules/SBMSystem"
 )
 
-func sigTermGoodBuy(rconf SABModules.Config_STR, signalType os.Signal) {
-	SABModules.Log_ON(&rconf)
-	defer SABModules.Log_OFF()
+func checkNTUWishes(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) int {
+	var (
+		i  int
+		pg SBMConnect.PgSQL
+	)
 
-	log.Printf(".")
-	log.Printf("..")
-	log.Printf("...")
-	log.Printf("Exit command received. Exiting...")
-	log.Println("Signal type: ", signalType)
-	log.Printf("Bye...")
-	log.Printf("...")
-	log.Printf("..")
-	log.Printf(".")
+	pg.Init(conf)
+	defer pg.Close()
 
-	SABModules.Pid_OFF(&rconf)
-
-	os.Exit(0)
-}
-
-func checkNTUWishes(rconf SABModules.Config_STR) int {
-	var i int
-
-	dbpg, err := sql.Open("postgres", rconf.PG_DSN)
+	pgrows, err := pg.D.Query("select count(userid) from aaa_dav_ntu")
 	if err != nil {
-		log.Printf("PG::Open() error: %v\n", err)
-		return -1
-	}
-
-	defer dbpg.Close()
-
-	pgrows, err := dbpg.Query("select count(userid) from aaa_dav_ntu")
-	if err != nil {
-		log.Printf("01 PG::Query() error: %v\n", err)
+		log.Printf("PG::Query() checkNTUWishes error: %v\n", err)
 		return -1
 	}
 
@@ -68,7 +44,7 @@ func checkNTUWishes(rconf SABModules.Config_STR) int {
 	return i
 }
 
-func goNTUWork(rconf SABModules.Config_STR) {
+func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 
 	type usIDPartList struct {
 		id   int
@@ -84,34 +60,27 @@ func goNTUWork(rconf SABModules.Config_STR) {
 		idxCards    = int(1)
 		workMode    = string("FULL")
 		i           int
+		pg          SBMConnect.PgSQL
 	)
 
-	SABModules.Log_ON(&rconf)
-	defer SABModules.Log_OFF()
+	logRedirect.Log("--> WakeUP!")
 
-	log.Printf("--> WakeUP!")
+	ldap_Attr = make([]string, len(conf.Conf.WLB_LDAP_ATTR))
 
-	ldap_Attr = make([]string, len(rconf.WLB_LDAP_ATTR))
-
-	for i = 0; i < len(rconf.WLB_LDAP_ATTR); i++ {
-		ldap_Attr[i] = rconf.WLB_LDAP_ATTR[i][0]
+	for i = 0; i < len(conf.Conf.WLB_LDAP_ATTR); i++ {
+		ldap_Attr[i] = conf.Conf.WLB_LDAP_ATTR[i][0]
 	}
 
-	ldap_VCard = make([]string, len(rconf.WLB_LDAP_ATTR))
+	ldap_VCard = make([]string, len(conf.Conf.WLB_LDAP_ATTR))
 
-	for i = 0; i < len(rconf.WLB_LDAP_ATTR); i++ {
-		ldap_VCard[i] = rconf.WLB_LDAP_ATTR[i][1]
+	for i = 0; i < len(conf.Conf.WLB_LDAP_ATTR); i++ {
+		ldap_VCard[i] = conf.Conf.WLB_LDAP_ATTR[i][1]
 	}
 
-	dbpg, err := sql.Open("postgres", rconf.PG_DSN)
-	if err != nil {
-		log.Printf("PG::Open() error: %v\n", err)
-		return
-	}
+	pg.Init(conf)
+	defer pg.Close()
 
-	defer dbpg.Close()
-
-	l, err := ldap.Dial("tcp", rconf.LDAP_URL[0][0])
+	l, err := ldap.Dial("tcp", conf.Conf.LDAP_URL[0][0])
 	if err != nil {
 		log.Printf("LDAP::Initialize() error: %v\n", err)
 		return
@@ -120,13 +89,13 @@ func goNTUWork(rconf SABModules.Config_STR) {
 	//l.Debug = true
 	defer l.Close()
 
-	err = l.Bind(rconf.LDAP_URL[0][1], rconf.LDAP_URL[0][2])
+	err = l.Bind(conf.Conf.LDAP_URL[0][1], conf.Conf.LDAP_URL[0][2])
 	if err != nil {
 		log.Printf("LDAP::Bind() error: %v\n", err)
 		return
 	}
 
-	db, err := sql.Open("mymysql", rconf.MY_DSN)
+	db, err := sql.Open("mymysql", conf.Conf.MY_DSN)
 	if err != nil {
 		log.Printf("MySQL::Open() error: %v\n", err)
 		return
@@ -134,13 +103,13 @@ func goNTUWork(rconf SABModules.Config_STR) {
 
 	defer db.Close()
 
-	log.Printf("\tInitialize DB...\n")
+	logRedirect.Log("\tInitialize DB...")
 	rows, err := db.Query(mySQL_InitDB)
 	if err != nil {
 		log.Printf("01 MySQL::Query() error: %v\n", err)
 		return
 	}
-	log.Printf("\t\tComplete!\n")
+	logRedirect.Log("\t\tComplete!")
 
 	time.Sleep(10 * time.Second)
 
@@ -148,12 +117,12 @@ func goNTUWork(rconf SABModules.Config_STR) {
 
 	//password := ""
 	multiCount := 0
-	log.Printf("\tCreate cacheDB from LDAP...\n")
+	logRedirect.Log("\tCreate cacheDB from LDAP...")
 
 	time_now := time.Now().Unix()
 	time_get := 0
 
-	pgrows1, err := dbpg.Query("select updtime from aaa_dav_ntu where userid=0;")
+	pgrows1, err := pg.D.Query("select updtime from aaa_dav_ntu where userid=0;")
 	if err != nil {
 		log.Printf("01 PG::Query() error: %v\n", err)
 		return
@@ -163,14 +132,14 @@ func goNTUWork(rconf SABModules.Config_STR) {
 	pgrows1.Scan(&time_get)
 
 	if time_get > 0 {
-		pgrows1, err = dbpg.Query("select x.id, x.login, x.password from aaa_logins as x where x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+		pgrows1, err = pg.D.Query("select x.id, x.login, x.password from aaa_logins as x where x.id in (select userid from aaa_dns where userid=x.id) order by login;")
 		if err != nil {
 			log.Printf("03 PG::Query() error: %v\n", err)
 			return
 		}
 		workMode = "FULL"
 	} else {
-		pgrows1, err = dbpg.Query("select x.id, x.login, x.password from aaa_logins as x, aaa_dav_ntu as y where x.id=y.userid and x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+		pgrows1, err = pg.D.Query("select x.id, x.login, x.password from aaa_logins as x, aaa_dav_ntu as y where x.id=y.userid and x.id in (select userid from aaa_dns where userid=x.id) order by login;")
 		if err != nil {
 			log.Printf("04 PG::Query() error: %v\n", err)
 			return
@@ -235,7 +204,7 @@ func goNTUWork(rconf SABModules.Config_STR) {
 			return
 		}
 
-		pgrows2, err := dbpg.Query(fmt.Sprintf("select dn from aaa_dns where userid=%d;", usID))
+		pgrows2, err := pg.D.Query(fmt.Sprintf("select dn from aaa_dns where userid=%d;", usID))
 		if err != nil {
 			log.Printf("02 PG::Query() error: %v\n", err)
 			return
@@ -250,9 +219,9 @@ func goNTUWork(rconf SABModules.Config_STR) {
 
 			log.Printf("\t\t\t%3d/%s - %s\n", usID, usName, usDN)
 
-			//log.Printf("%s|||%s|||%s\n", usDN, rconf.LDAP_URL[0][4], ldap_Attr)
+			//log.Printf("%s|||%s|||%s\n", usDN, conf.Conf.LDAP_URL[0][4], ldap_Attr)
 
-			search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, rconf.LDAP_URL[0][4], ldap_Attr, nil)
+			search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, conf.Conf.LDAP_URL[0][4], ldap_Attr, nil)
 
 			sr, err := l.Search(search)
 			if err != nil {
@@ -324,10 +293,10 @@ func goNTUWork(rconf SABModules.Config_STR) {
 		idxUsers++
 	}
 
-	log.Printf("\t\tComplete!\n")
+	logRedirect.Log("\t\tComplete!")
 
 	if workMode == "PART" {
-		log.Printf("\tUpdate tables in PartialUpdate mode...\n")
+		logRedirect.Log("\tUpdate tables in PartialUpdate mode...")
 		for j := 0; j < len(usIDArray); j++ {
 			log.Printf("\t\t\tUpdate %d/%s...\n", usIDArray[j].id, usIDArray[j].name)
 			for i := 0; i < len(mySQL_Update_part1); i++ {
@@ -381,7 +350,7 @@ func goNTUWork(rconf SABModules.Config_STR) {
 			time.Sleep(2 * time.Second)
 		}
 	} else {
-		log.Printf("\tUpdate tables...\n")
+		logRedirect.Log("\tUpdate tables...")
 		for i := 0; i < len(mySQL_Update_full1); i++ {
 			log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update_full1))
 			_, err = db.Query(mySQL_Update_full1[i])
@@ -424,88 +393,71 @@ func goNTUWork(rconf SABModules.Config_STR) {
 		}
 	}
 
-	log.Printf("\t\tComplete!\n")
+	logRedirect.Log("\t\tComplete!")
 
-	log.Printf("\tClean NeedToUpdate table...\n")
+	logRedirect.Log("\tClean NeedToUpdate table...")
 	queryx = fmt.Sprintf("delete from aaa_dav_ntu where userid=0 or updtime<%d;", time_now)
 	//log.Printf("%s\n", queryx)
-	_, err = dbpg.Query(queryx)
+	_, err = pg.D.Query(queryx)
 	if err != nil {
 		log.Printf("PG::Query() Clean NTU table error: %v\n", err)
 		return
 	}
 
-	log.Printf("\tComplete!\n")
-
-	log.Printf("--> To Sleep...")
-	log.Printf(".")
-
+	logRedirect.Log("\tComplete!")
+	logRedirect.Bye()
 }
 
 func main() {
 
 	const (
 		pName = string("SABook CardDAVMaker")
-		pVer  = string("4 2015.11.01.00.00")
+		pVer  = string("5 2015.11.03.21.00")
 	)
 
 	var (
-		def_config_file = string("./CardDAVMaker.json") // Default configuration file
-		def_log_file    = string("./CardDAVMaker.log")  // Default log file
-		def_daemon_mode = string("NO")                  // Default start in foreground
-		rconf           SABModules.Config_STR
-		sleepWatch      = int(0)
+		jsonConfig  SBMSystem.ReadJSONConfig
+		logRedirect SBMSystem.LogFile
+		pid         SBMSystem.PidFile
+		sleepWatch  = int(0)
 	)
 
 	fmt.Printf("\n\t%s V%s\n\n", pName, pVer)
 
-	rconf.LOG_File = def_log_file
+	jsonConfig.Init()
 
-	def_config_file, def_daemon_mode = SABModules.ParseCommandLine(def_config_file, def_daemon_mode)
+	pid.ON(jsonConfig)
+	pid.OFF(jsonConfig)
 
-	log.Printf("%s %s %s", def_config_file, def_daemon_mode, os.Args[0])
+	logRedirect.ON(jsonConfig)
+	logRedirect.OFF()
 
-	SABModules.ReadConfigFile(def_config_file, &rconf)
+	SBMSystem.Fork(jsonConfig)
+	SBMSystem.Signal(jsonConfig, pid)
 
-	SABModules.Pid_Check(&rconf)
+	pid.ON(jsonConfig)
+	defer pid.OFF(jsonConfig)
 
-	if def_daemon_mode == "YES" {
-		if err := exec.Command(os.Args[0], fmt.Sprintf("-daemon=GO -config=%s &", def_config_file)).Start(); err != nil {
-			log.Fatalf("Fork daemon error: %v", err)
-		} else {
-			log.Printf("Forked!")
-			os.Exit(0)
-		}
-	}
-
-	SABModules.Log_ON(&rconf)
-	log.Printf("-> %s V%s", pName, pVer)
-	log.Printf("--> Go!")
-	SABModules.Log_OFF()
-
-	SABModules.Pid_ON(&rconf)
-
-	ch := make(chan os.Signal, 1)
-	signal.Notify(ch, os.Interrupt, os.Kill, syscall.SIGTERM)
-	go func() {
-		signalType := <-ch
-		signal.Stop(ch)
-		sigTermGoodBuy(rconf, signalType)
-	}()
+	logRedirect.ON(jsonConfig)
+	logRedirect.Hello(pName, pVer)
+	logRedirect.OFF()
 
 	for {
+		logRedirect.ON(jsonConfig)
 
-		if checkNTUWishes(rconf) > 0 {
-			goNTUWork(rconf)
+		if checkNTUWishes(jsonConfig, logRedirect) > 0 {
+			logRedirect.Hello(pName, pVer)
+			goNTUWork(jsonConfig, logRedirect)
 			sleepWatch = 0
 		}
 
 		if sleepWatch > 3600 {
-			log.Printf("<-- I'm alive ... :)")
+			logRedirect.Log("<-- I'm alive ... :)")
 			sleepWatch = 0
 		}
 
-		time.Sleep(time.Duration(rconf.Sleep_Time) * time.Second)
-		sleepWatch += rconf.Sleep_Time
+		logRedirect.OFF()
+		time.Sleep(time.Duration(jsonConfig.Conf.Sleep_Time) * time.Second)
+		sleepWatch += jsonConfig.Conf.Sleep_Time
 	}
 }
