@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"database/sql"
+	//"database/sql"
 
 	// PostgreSQL
 	_ "github.com/lib/pq"
@@ -29,17 +29,19 @@ func checkNTUWishes(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile
 		pg SBMConnect.PgSQL
 	)
 
-	pg.Init(conf)
+	if pg.Init(conf, "") != 0 {
+		return -1
+	}
 	defer pg.Close()
 
-	pgrows, err := pg.D.Query("select count(userid) from aaa_dav_ntu")
+	res, err := pg.D.Query("select count(userid) from aaa_dav_ntu")
 	if err != nil {
 		log.Printf("PG::Query() checkNTUWishes error: %v\n", err)
 		return -1
 	}
 
-	pgrows.Next()
-	pgrows.Scan(&i)
+	res.Next()
+	res.Scan(&i)
 
 	return i
 }
@@ -61,6 +63,8 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		workMode    = string("FULL")
 		i           int
 		pg          SBMConnect.PgSQL
+		my          SBMConnect.MySQL
+		ld          SBMConnect.LDAP
 	)
 
 	logRedirect.Log("--> WakeUP!")
@@ -77,39 +81,29 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		ldap_VCard[i] = conf.Conf.WLB_LDAP_ATTR[i][1]
 	}
 
-	pg.Init(conf)
+	logRedirect.Log("\tConnect to PgSQL...")
+	if pg.Init(conf, "") != 0 {
+		log.Println("Init PgSQL Error!")
+		return
+	}
 	defer pg.Close()
+	logRedirect.Log("\t\t...Complete!")
 
-	l, err := ldap.Dial("tcp", conf.Conf.LDAP_URL[0][0])
-	if err != nil {
-		log.Printf("LDAP::Initialize() error: %v\n", err)
+	logRedirect.Log("\tInitialize MySQL CardDAV DB...")
+	if my.Init(conf, mySQL_InitDB) != 0 {
+		log.Println("Init MySQL Error!")
 		return
 	}
+	defer my.Close()
+	logRedirect.Log("\t\t...Complete!")
 
-	//l.Debug = true
-	defer l.Close()
-
-	err = l.Bind(conf.Conf.LDAP_URL[0][1], conf.Conf.LDAP_URL[0][2])
-	if err != nil {
-		log.Printf("LDAP::Bind() error: %v\n", err)
+	logRedirect.Log("\tConnect to LDAP...")
+	if ld.Init(conf) != 0 {
+		log.Println("Init LDAP Error!")
 		return
 	}
-
-	db, err := sql.Open("mymysql", conf.Conf.MY_DSN)
-	if err != nil {
-		log.Printf("MySQL::Open() error: %v\n", err)
-		return
-	}
-
-	defer db.Close()
-
-	logRedirect.Log("\tInitialize DB...")
-	rows, err := db.Query(mySQL_InitDB)
-	if err != nil {
-		log.Printf("01 MySQL::Query() error: %v\n", err)
-		return
-	}
-	logRedirect.Log("\t\tComplete!")
+	defer ld.Close()
+	logRedirect.Log("\t\t...Complete!")
 
 	time.Sleep(10 * time.Second)
 
@@ -158,7 +152,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		usIDArray = append(usIDArray, usIDPartList{id: usID, name: usName})
 		queryx = fmt.Sprintf("select id from users where username='%s';", usName)
 		//log.Printf("%s\n", queryx)
-		rows, err = db.Query(queryx)
+		rows, err := my.D.Query(queryx)
 		if err != nil {
 			log.Printf("02 MySQL::Query() error: %v\n", err)
 			log.Printf("%s\n", queryx)
@@ -172,7 +166,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		} else {
 			queryx = "select id from users order by id desc limit 1;"
 			//log.Printf("%s\n", queryx)
-			rows, err = db.Query(queryx)
+			rows, err = my.D.Query(queryx)
 			if err != nil {
 				log.Printf("03 MySQL::Query() error: %v\n", err)
 				log.Printf("%s\n", queryx)
@@ -197,7 +191,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, usID, usName)
 		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, usID, usName)
 		//log.Printf("%s\n", queryx)
-		_, err = db.Query(queryx)
+		_, err = my.D.Query(queryx)
 		if err != nil {
 			log.Printf("03 MySQL::Query() error: %v\n", err)
 			log.Printf("%s\n", queryx)
@@ -223,7 +217,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 
 			search := ldap.NewSearchRequest(usDN, 2, ldap.NeverDerefAliases, 0, 0, false, conf.Conf.LDAP_URL[0][4], ldap_Attr, nil)
 
-			sr, err := l.Search(search)
+			sr, err := ld.D.Search(search)
 			if err != nil {
 				log.Printf("LDAP::Search() error: %v\n", err)
 				return
@@ -267,7 +261,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 					queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_cards (id, addressbookid, carddata, uri, lastmodified)\n\tVALUES (%d, %d, '%s', '%s.vcf', NULL);", queryx, idxCards, usID, y, uid)
 					if multiCount > multiInsert {
 						//log.Printf("%s\n", queryx)
-						_, err = db.Query(queryx)
+						_, err = my.D.Query(queryx)
 						if err != nil {
 							log.Printf("MySQL::Query() error: %v\n", err)
 							log.Printf("%s\n", queryx)
@@ -281,7 +275,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 
 				}
 			}
-			_, err = db.Query(queryx)
+			_, err = my.D.Query(queryx)
 			if err != nil {
 				log.Printf("MySQL::Query() error: %v\n", err)
 				log.Printf("%s\n", queryx)
@@ -304,7 +298,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 
 				queryx = strings.Replace(mySQL_Update_part1[i], "XYZIDXYZ", fmt.Sprintf("%d", usIDArray[j].id), -1)
 				//log.Printf("%s\n", queryx)
-				_, err = db.Query(queryx)
+				_, err = my.D.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)
 					log.Printf("MySQL::Query() error: %v\n", err)
@@ -315,7 +309,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 			for i := 0; i < len(mySQL_Update1); i++ {
 				log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update1))
 				//log.Printf("%s\n", mySQL_Update1[i])
-				_, err = db.Query(mySQL_Update1[i])
+				_, err = my.D.Query(mySQL_Update1[i])
 				if err != nil {
 					log.Printf("%s\n", mySQL_Update1[i])
 					log.Printf("MySQL::Query() error: %v\n", err)
@@ -328,7 +322,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 
 				queryx = strings.Replace(mySQL_Update_part2[i], "XYZIDXYZ", fmt.Sprintf("%d", usIDArray[j].id), -1)
 				//log.Printf("%s\n", queryx)
-				_, err = db.Query(queryx)
+				_, err = my.D.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)
 					log.Printf("MySQL::Query() error: %v\n", err)
@@ -339,7 +333,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 			for i := 0; i < len(mySQL_Update2); i++ {
 				log.Printf("\t\t\tstep %d (%d of %d)...\n", j+1, i+1, len(mySQL_Update2))
 				//log.Printf("%s\n", mySQL_Update2[i])
-				_, err = db.Query(mySQL_Update2[i])
+				_, err = my.D.Query(mySQL_Update2[i])
 				if err != nil {
 					log.Printf("%s\n", mySQL_Update2[i])
 					log.Printf("MySQL::Query() error: %v\n", err)
@@ -353,7 +347,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		logRedirect.Log("\tUpdate tables...")
 		for i := 0; i < len(mySQL_Update_full1); i++ {
 			log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update_full1))
-			_, err = db.Query(mySQL_Update_full1[i])
+			_, err = my.D.Query(mySQL_Update_full1[i])
 			if err != nil {
 				log.Printf("%s\n", mySQL_Update_full1[i])
 				log.Printf("MySQL::Query() error: %v\n", err)
@@ -363,7 +357,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		}
 		for i := 0; i < len(mySQL_Update1); i++ {
 			log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update1))
-			_, err = db.Query(mySQL_Update1[i])
+			_, err = my.D.Query(mySQL_Update1[i])
 			if err != nil {
 				log.Printf("%s\n", mySQL_Update1[i])
 				log.Printf("MySQL::Query() error: %v\n", err)
@@ -373,7 +367,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		}
 		for i := 0; i < len(mySQL_Update_full2); i++ {
 			log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update_full2))
-			_, err = db.Query(mySQL_Update_full2[i])
+			_, err = my.D.Query(mySQL_Update_full2[i])
 			if err != nil {
 				log.Printf("%s\n", mySQL_Update_full2[i])
 				log.Printf("MySQL::Query() error: %v\n", err)
@@ -383,7 +377,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, logRedirect SBMSystem.LogFile) {
 		}
 		for i := 0; i < len(mySQL_Update2); i++ {
 			log.Printf("\t\t\tstep %d of %d...\n", i+1, len(mySQL_Update2))
-			_, err = db.Query(mySQL_Update2[i])
+			_, err = my.D.Query(mySQL_Update2[i])
 			if err != nil {
 				log.Printf("%s\n", mySQL_Update2[i])
 				log.Printf("MySQL::Query() error: %v\n", err)
@@ -412,7 +406,7 @@ func main() {
 
 	const (
 		pName = string("SABook CardDAVMaker")
-		pVer  = string("5 2015.11.03.21.00")
+		pVer  = string("5 2015.11.04.02.00")
 	)
 
 	var (
@@ -444,6 +438,7 @@ func main() {
 
 	for {
 		logRedirect.ON(jsonConfig)
+		jsonConfig.Update()
 
 		if checkNTUWishes(jsonConfig, logRedirect) > 0 {
 			logRedirect.Hello(pName, pVer)
