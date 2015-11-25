@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS aaa_logins (
     password character varying(255) NOT NULL,
     uid bytea,
     role integer NOT NULL,
+    cdavprefix integer NULL,
     UNIQUE (uid)
 );
 

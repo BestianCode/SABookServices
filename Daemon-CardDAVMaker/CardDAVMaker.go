@@ -44,15 +44,15 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, rLog SBMSystem.LogFile) {
 		ldap_VCard  []string
 		queryx      string
 		multiInsert = int(64)
-		idxUsers    = int(1)
-		idxCards    = int(1)
-		workMode    = string("FULL")
-		i           int
-		pg          SBMConnect.PgSQL
-		my          SBMConnect.MySQL
-		ld          SBMConnect.LDAP
-		err         error
-		pgrows1     *sql.Rows
+		//idxUsers    = int(1)
+		idxCards = int(1)
+		workMode = string("FULL")
+		i        int
+		pg       SBMConnect.PgSQL
+		my       SBMConnect.MySQL
+		ld       SBMConnect.LDAP
+		err      error
+		pgrows1  *sql.Rows
 	)
 
 	rLog.Log("--> WakeUP!")
@@ -95,14 +95,14 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, rLog SBMSystem.LogFile) {
 		log.Println("PgSQL: Error reading NTU table")
 		return
 	case time_get > 0:
-		pgrows1, err = pg.D.Query("select x.id, x.login, x.password from aaa_logins as x where x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+		pgrows1, err = pg.D.Query("select x.id, x.login, x.password, x.cdavprefix from aaa_logins as x where x.id in (select userid from aaa_dns where userid=x.id) order by login;")
 		if err != nil {
 			log.Printf("PG::Query() 02 error: %v\n", err)
 			return
 		}
 		workMode = "FULL"
 	case time_get == 0:
-		pgrows1, err = pg.D.Query("select x.id, x.login, x.password from aaa_logins as x, aaa_dav_ntu as y where x.id=y.userid and x.id in (select userid from aaa_dns where userid=x.id) order by login;")
+		pgrows1, err = pg.D.Query("select x.id, x.login, x.password, x.cdavprefix from aaa_logins as x, aaa_dav_ntu as y where x.id=y.userid and x.id in (select userid from aaa_dns where userid=x.id) order by login;")
 		if err != nil {
 			log.Printf("PG::Query() 03 error: %v\n", err)
 			return
@@ -113,30 +113,34 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, rLog SBMSystem.LogFile) {
 	usID := 0
 	usName := ""
 	usPass := ""
-	userIDGet := 0
+	usCDavPrefix := 0
+	//userIDGet := 0
 	usIDArray := make([]usIDPartList, 0)
 	for pgrows1.Next() {
-		pgrows1.Scan(&usID, &usName, &usPass)
+		usCDavPrefix = 0
+		pgrows1.Scan(&usID, &usName, &usPass, &usCDavPrefix)
 		usIDArray = append(usIDArray, usIDPartList{id: usID, name: usName})
-
-		userIDGet = my.QSimple("select id from users where username='", usName, "';")
-		switch {
-		case userIDGet < 0:
-			log.Println("Error get user ID")
-			return
-		case userIDGet > 0:
-			idxUsers = userIDGet
-		case userIDGet == 0:
-			userIDGet = my.QSimple("select id from users order by id desc limit 1;")
-			if userIDGet > 0 {
-				userIDGet++
-				idxUsers = userIDGet
-			} else {
-				log.Println("Error get max user ID")
+		/*
+			userIDGet = my.QSimple("select id from users where username='", usName, "';")
+			switch {
+			case userIDGet < 0:
+				log.Println("Error get user ID")
 				return
+			case userIDGet > 0:
+				idxUsers = userIDGet
+			case userIDGet == 0:
+				userIDGet = my.QSimple("select id from users order by id desc limit 1;")
+				if userIDGet > 0 {
+					userIDGet++
+					idxUsers = userIDGet
+				} else {
+					userIDGet = 0
+					userIDGet++
+					log.Println("Error get max user ID")
+					//return
+				}
 			}
-		}
-
+		*/
 		queryx = fmt.Sprintf("INSERT INTO z_cache_users (id, username, digesta1)\n\tVALUES (%d, '%s', '%s');", usID, usName, usPass)
 		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_principals (id, uri, email, displayname, vcardurl)\n\tVALUES (%d, 'principals/%s', NULL, NULL, NULL);", queryx, usID, usName)
 		queryx = fmt.Sprintf("%s\nINSERT INTO z_cache_addressbooks (id, principaluri, uri, ctag)\n\tVALUES (%d, 'principals/%s', 'default', 1); select id from users order by id desc limit 1", queryx, usID, usName)
@@ -190,7 +194,22 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, rLog SBMSystem.LogFile) {
 								fn_nofam = strings.Trim(fn_nofam, " ")
 								y = fmt.Sprintf("%s%s:%s %s\n", y, ldap_VCard[k], fn_nofam, fn_split[0])
 							} else {
-								y = fmt.Sprintf("%s%s:%s\n", y, ldap_VCard[k], x[ldap_VCard[k]])
+								switch usCDavPrefix {
+								case 2:
+									if ldap_VCard[k] == conf.Conf.CardDAVIPSuffix[0] {
+										y = fmt.Sprintf("%s%s:%s@%s\n", y, ldap_VCard[k], x[ldap_VCard[k]], conf.Conf.CardDAVIPSuffix[1])
+									}
+									y = fmt.Sprintf("%s%s:%s\n", y, ldap_VCard[k], x[ldap_VCard[k]])
+								case 1:
+									if ldap_VCard[k] == conf.Conf.CardDAVIPSuffix[0] {
+										y = fmt.Sprintf("%s%s:%s@%s\n", y, ldap_VCard[k], x[ldap_VCard[k]], conf.Conf.CardDAVIPSuffix[1])
+									} else {
+										y = fmt.Sprintf("%s%s:%s\n", y, ldap_VCard[k], x[ldap_VCard[k]])
+									}
+								default:
+									y = fmt.Sprintf("%s%s:%s\n", y, ldap_VCard[k], x[ldap_VCard[k]])
+								}
+
 							}
 						}
 					}
@@ -224,7 +243,7 @@ func goNTUWork(conf SBMSystem.ReadJSONConfig, rLog SBMSystem.LogFile) {
 			queryx = ""
 			multiCount = 0
 		}
-		idxUsers++
+		//idxUsers++
 	}
 
 	rLog.Log("\t\tComplete!")
@@ -327,12 +346,12 @@ func main() {
 
 	const (
 		pName = string("SABook CardDAVMaker")
-		pVer  = string("5 2015.11.05.21.00")
+		pVer  = string("5 2015.11.25.21.00")
 	)
 
 	fmt.Printf("\n\t%s V%s\n\n", pName, pVer)
 
-	jsonConfig.Init()
+	jsonConfig.Init("./CardDAVMaker.log", "./CardDAVMaker.json")
 
 	rLog.ON(jsonConfig)
 	pid.ON(jsonConfig)

@@ -44,13 +44,15 @@ type tList struct {
 	AAAPassword string
 	AAAFullName string
 	AAARole     string
+	AAACDMode   string
+	AAACDModeI  int
 	NewSABLogin string
 	DavDN       string
 }
 
 const (
 	pName     = string("Web Address Book")
-	pVer      = string("4 alpha 2015.11.01.22.00")
+	pVer      = string("5 2015.11.25.21.00")
 	userLimit = 20
 	COOKIE_ID = "SABookSessionID"
 	roleAdmin = 100
@@ -66,6 +68,7 @@ var (
 	ldap_count      = int(0)
 	sleepTime       = 60
 	//dbpg            *sql.DB
+	cDavMode = []string{"(без суффикса)", "(с суффиксом)", "оба варианта"}
 )
 
 func pgInit() {
@@ -141,6 +144,7 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 		aaa_password     = string("")
 		aaa_fullname     = string("")
 		aaa_role         = string("")
+		aaa_cdavmode     = int(0)
 		newSABLogin      string
 		get_davdn        = string("")
 		err              error
@@ -218,7 +222,7 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 				davDN = fmt.Sprintf("%s%s\n", davDN, get_davdn)
 			}
 
-			queryx = fmt.Sprintf("select login,password,fullname,role from aaa_logins where uid='%s';", fField["UID"])
+			queryx = fmt.Sprintf("select login,password,fullname,role,cdavprefix from aaa_logins where uid='%s';", fField["UID"])
 			//fmt.Printf("%s\n", queryx)
 			rows, err = dbpg.Query(queryx)
 			if err != nil {
@@ -227,7 +231,7 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 			}
 
 			rows.Next()
-			rows.Scan(&aaa_login, &aaa_password, &aaa_fullname, &aaa_role)
+			rows.Scan(&aaa_login, &aaa_password, &aaa_fullname, &aaa_role, &aaa_cdavmode)
 			if len(aaa_password) > 0 {
 				aaa_password = "Ok"
 			} else {
@@ -249,7 +253,7 @@ func getMore(remIPClient string, fField map[string]string, fType string, l *ldap
 			}
 		}
 
-		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"], ADDomain: fField["ADDomain"], AdminMode: setAdminMode, UID: fField["UID"], AAALogin: aaa_login, AAAPassword: aaa_password, AAAFullName: aaa_fullname, AAARole: aaa_role, NewSABLogin: newSABLogin, DavDN: davDN}
+		dnList[fField["DN"]] = tList{URL: fURL, URLName: fURLName, ORGName: fField["ORGName"], USERName: fField["USERName"], FullName: fField["FullName"], Position: fField["Position"], PhoneInt: fField["PhoneInt"], Mobile: fField["Mobile"], PhoneExt: fField["PhoneExt"], Mail: fField["Mail"], ADLogin: fField["ADLogin"], ADDomain: fField["ADDomain"], AdminMode: setAdminMode, UID: fField["UID"], AAALogin: aaa_login, AAAPassword: aaa_password, AAAFullName: aaa_fullname, AAARole: aaa_role, NewSABLogin: newSABLogin, DavDN: davDN, AAACDMode: cDavMode[aaa_cdavmode], AAACDModeI: aaa_cdavmode}
 		//fmt.Printf("%v\n", dnList)
 	}
 }

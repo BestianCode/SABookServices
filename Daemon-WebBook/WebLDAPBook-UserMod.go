@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"database/sql"
@@ -22,6 +23,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 		password_x2 string
 		fullname    string
 		role        string
+		suffix      int
 		rolen       int
 		uFullname   string
 		xId         int
@@ -34,6 +36,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 	password_x2 = r.FormValue("password_x2")
 	fullname = r.FormValue("fullname")
 	role = r.FormValue("role")
+	suffix, _ = strconv.Atoi(r.FormValue("suffix"))
 
 	remIPClient := getIPAddress(r)
 
@@ -99,7 +102,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 					rolen = 0
 				}
 				//queryx := fmt.Sprintf("insert into aaa_logins (id,login,fullname,password,role,uid) select id+1,'%s','%s',md5('%s:%s:%s'),%d,'%s' from aaa_logins order by id desc limit 1;", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid)
-				queryx = fmt.Sprintf("insert into aaa_logins (login,fullname,password,role,uid) values ('%s','%s',md5('%s:%s:%s'),%d,'%s');", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid)
+				queryx = fmt.Sprintf("insert into aaa_logins (login,fullname,password,role,uid,cdavprefix) values ('%s','%s',md5('%s:%s:%s'),%d,'%s');", login, fullname, login, rconf.SABRealm, password_x1, rolen, uid, suffix)
 				_, err = dbpg.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)
@@ -118,7 +121,7 @@ func modifyHandler(w http.ResponseWriter, r *http.Request) {
 				default:
 					rolen = 0
 				}
-				queryx = fmt.Sprintf("update aaa_logins set role=%d where uid='%s';", rolen, uid)
+				queryx = fmt.Sprintf("update aaa_logins set role=%d, cdavprefix=%d where uid='%s';", rolen, suffix, uid)
 				_, err = dbpg.Query(queryx)
 				if err != nil {
 					log.Printf("%s\n", queryx)

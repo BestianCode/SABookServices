@@ -211,19 +211,22 @@ UID -->
 								{{ end }}
 								{{ if $value.AAARole }}
 									<tr>
-										<td class="UserInfo_leftHeadAdm">SAB Role</td>
+										<td class="UserInfo_leftHeadAdm">Preferences</td>
 										<td>
 											<table width="100%">
 												<tr>
 													<td class="UserInfo_rangeAdm" width="60%">
 														<a>{{$value.AAARole}}</a>
+								{{ if $value.AAACDMode }}
+														<a>{{$value.AAACDMode}}</a>
+								{{ end }}
 													</td>
 													<td class="UserMod">
 
 <table width="100%">
 	<tr>
 		<td>
-			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_role_{{$value.UID}}').style.display='block';document.getElementById('change_role_{{$value.UID}}').style.display='block';">( изменить роль )</a>	
+			<a style="color: #009900" href="javascript:void(0)" onclick = "document.getElementById('envelope_role_{{$value.UID}}').style.display='block';document.getElementById('change_role_{{$value.UID}}').style.display='block';">( изменить настройки )</a>	
 			<div id="envelope_role_{{$value.UID}}" class="envelope">
 			<form method="post" action="/modify">
 				<table width="100%">
@@ -239,8 +242,18 @@ UID -->
 						<td class="UserInfo_leftHead">Роль</td>
 						<td class="PopUpBtnL">
 							<select name="role">
-							  <option value="admin">администратор</option>
-							  <option value="user" selected>пользователь</option>
+							  <option value="admin" {{if eq $value.AAARole "Administrator"}}selected{{end}}>администратор</option>
+							  <option value="user" {{if eq $value.AAARole "User"}}selected{{end}}>пользователь</option>
+							</select>
+						</td>
+					</tr>
+					<tr>
+						<td class="UserInfo_leftHead">CardDAV</td>
+						<td class="PopUpBtnL">
+							<select name="suffix">
+							  <option value="0" {{if eq $value.AAACDModeI 0}}selected{{end}}>без суффикса</option>
+							  <option value="1" {{if eq $value.AAACDModeI 1}}selected{{end}}>с суффиксом</option>
+							  <option value="2" {{if eq $value.AAACDModeI 2}}selected{{end}}>оба варианта</option>
 							</select>
 						</td>
 					</tr>

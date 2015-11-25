@@ -16,6 +16,8 @@
 					["pager","TEL;WORK"]
 				],
 
+	"CardDAVIPSuffix":		["TEL;TYPE=VOICE;TYPE=PREF","sip.net"],
+
 	"Sleep_Time":	60,
 
 	"LOG_File":		"/var/log/ABook/CardDAVMaker.log",
