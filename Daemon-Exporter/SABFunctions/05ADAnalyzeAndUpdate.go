@@ -32,6 +32,7 @@ func AD_Analyze(conf *SABModules.Config_STR) int {
 		w      string
 		v      string
 		q      string
+		dp     string
 
 		/*
 			lastx = int(0)
@@ -181,9 +182,9 @@ func AD_Analyze(conf *SABModules.Config_STR) int {
 	}
 
 	for rows.Next() {
-		rows.Scan(&x, &y, &z, &w, &v, &q)
+		rows.Scan(&x, &y, &z, &w, &v, &q, &dp)
 		log.Printf("AD USERS Upd Creds: %s\n", x)
-		ofr.WriteString(fmt.Sprintf("dsmod user \"%s\" -email \"%s\" -title \"%s\" -mobile \"%s\" -tel \"%s\" -pager \"%s\"\n", x, y, z, w, v, q))
+		ofr.WriteString(fmt.Sprintf("dsmod user \"%s\" -email \"%s\" -title \"%s\" -mobile \"%s\" -tel \"%s\" -pager \"%s\" -dept \"%s\"\n", x, y, z, w, v, q, dp))
 	}
 
 	ofr.Close()

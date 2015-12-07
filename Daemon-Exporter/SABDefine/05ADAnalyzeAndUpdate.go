@@ -18,7 +18,7 @@ select format('%s %s %s', cache.nlr, cache.nfr, cache.nmr), xad.dn from XYZDBADX
             lower(format('%s %s', cache.nlr, cache.nfr))=lower(xad.cn) or
             lower(format('%s %s', cache.nfr, cache.nlr))=lower(xad.displayname) or
             lower(format('%s %s', cache.nfr, cache.nlr))=lower(xad.cn)
-        ) and XYZSubParentCheckXYZ and 
+        ) and XYZSubParentCheckXYZ and
         dn not in
             (select dn from XYZDBADXYZ as ad,
                     (select cn from XYZDBADXYZ group by cn having count(cn)>1) as cn_mult,
@@ -31,7 +31,7 @@ select format('%s %s %s', cache.nlr, cache.nfr, cache.nmr), xad.dn from XYZDBADX
     `)
 
 	PG_QUE_AD_GetNotConnected = string(`
-select dn from XYZDBADXYZ where dn not in 
+select dn from XYZDBADXYZ where dn not in
     (select xad.dn from XYZDBADXYZ as xad, XYZDBPersXYZ as cache
         where
             (
@@ -51,17 +51,18 @@ select dn from XYZDBADXYZ where dn not in
     `)
 
 	PG_QUE_AD_SetCredentInfoToAD = string(`
-select fsab.dn, fsab.mail, fsab.title, fsab.ph_mob, fsab.ph_int, fsab.ph_ext from XYZDBADXYZ as fad,
+select fsab.dn, fsab.mail, fsab.title, fsab.ph_mob, fsab.ph_int, fsab.ph_ext, fsab.dep from XYZDBADXYZ as fad,
     (select
-        x.dn as dn, z.mail as mail, v.bc as title,
+        x.dn as dn, z.mail as mail, v.bc as title, w.name as dep,
         coalesce((select string_agg(phone, ', ') from ldapx_phones where pass=1 and pers_id=y.pers_id), '') as ph_mob,
         coalesce((select string_agg(phone, ', ') from ldapx_phones where pass=2 and pers_id=y.pers_id), '') as ph_int,
         coalesce((select string_agg(phone, ', ') from ldapx_phones where pass=3 and pers_id=y.pers_id), '') as ph_ext
-            from XYZDBADXYZ as x, ldapx_ad_login as y, ldapx_mail as z, ldapx_persons as v
+            from XYZDBADXYZ as x, ldapx_ad_login as y, ldapx_mail as z, ldapx_persons as v, ldapx_institutes as w
                 where
                     z.pers_id=y.pers_id and
                     y.dlogin=x.dlogin and
                     v.uid=y.pers_id and
+                    v.idparent=w.uid and
                     v.lang=0) as fsab
     where fad.connected='yes' and fad.dn=fsab.dn and
         (fad.mail<>fsab.mail or
